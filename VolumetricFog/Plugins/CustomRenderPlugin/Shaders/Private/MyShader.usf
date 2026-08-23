@@ -1,0 +1,12 @@
+// C++側の BEGIN_SHADER_PARAMETER_STRUCT(FMyShaderParameters) と完全対応
+// UE5がコンパイル時に自動的にこの定数バッファ構造体を生成してくれます
+
+#include "/Engine/Private/Common.ush"
+
+// C++の SHADER_PARAMETER(FLinearColor, MyColor) と同名で宣言
+float4 MyColor;
+
+void MainPS(out float4 OutColor : SV_Target0)
+{
+    OutColor = MyColor; // C++から送られた色を出力
+}

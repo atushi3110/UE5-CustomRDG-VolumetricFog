@@ -1,0 +1,15 @@
+{
+	"RemapUnityFiles": 
+	{
+		"Module.CustomRenderPlugin.cpp.obj": [
+			"CustomRenderLibrary.gen.cpp.obj",
+			"CustomRenderPlugin.init.gen.cpp.obj",
+			"MyRenderTestLibrary.gen.cpp.obj",
+			"PerModuleInline.gen.cpp.obj",
+			"CustomRenderPlugin.cpp.obj",
+			"MyCustomShader.cpp.obj",
+			"MyRenderTestLibrary.cpp.obj",
+			"CustomRenderLibrary.cpp.obj"
+		]
+	}
+}

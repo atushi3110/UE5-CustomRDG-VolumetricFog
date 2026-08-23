@@ -1,2 +1,3 @@
-2026/08/23-22:48:44.871 3c18 Creating DB C:\UE5\Portfolio\UE5-CustomRDG-VolumetricFog\VolumetricFog\Saved\webcache_6613\Default\shared_proto_db since it was missing.
-2026/08/23-22:48:44.880 3c18 Reusing MANIFEST C:\UE5\Portfolio\UE5-CustomRDG-VolumetricFog\VolumetricFog\Saved\webcache_6613\Default\shared_proto_db/MANIFEST-000001
+2026/08/23-23:48:49.056 7aa0 Reusing MANIFEST C:\UE5\Portfolio\UE5-CustomRDG-VolumetricFog\VolumetricFog\Saved\webcache_6613\Default\shared_proto_db/MANIFEST-000001
+2026/08/23-23:48:49.057 7aa0 Recovering log #3
+2026/08/23-23:48:49.058 7aa0 Reusing old log C:\UE5\Portfolio\UE5-CustomRDG-VolumetricFog\VolumetricFog\Saved\webcache_6613\Default\shared_proto_db/000003.log 

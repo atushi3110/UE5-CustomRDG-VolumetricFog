@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <None Include="..\..\.vsconfig" />
     <Filter Include="Config">
       <UniqueIdentifier>{FA535FFB-25E1-3D20-B416-52F9BE21E06E}</UniqueIdentifier>
     </Filter>
@@ -16,6 +17,69 @@
     <None Include="..\..\Config\DefaultInput.ini">
       <Filter>Config</Filter>
     </None>
+    <Filter Include="Plugins">
+      <UniqueIdentifier>{BB38096A-B391-30DC-A0D4-4F3EA6B44507}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Plugins\CustomRenderPlugin">
+      <UniqueIdentifier>{E988ACD7-8CAB-3CC3-AEAF-86859FA66B2F}</UniqueIdentifier>
+    </Filter>
+    <None Include="..\..\Plugins\CustomRenderPlugin\CustomRenderPlugin.uplugin">
+      <Filter>Plugins\CustomRenderPlugin</Filter>
+    </None>
+    <Filter Include="Plugins\CustomRenderPlugin\Resources">
+      <UniqueIdentifier>{0370ED06-4F8C-3E80-AD93-295643663D96}</UniqueIdentifier>
+    </Filter>
+    <None Include="..\..\Plugins\CustomRenderPlugin\Resources\Icon128.png">
+      <Filter>Plugins\CustomRenderPlugin\Resources</Filter>
+    </None>
+    <Filter Include="Plugins\CustomRenderPlugin\Shaders">
+      <UniqueIdentifier>{28FCE255-CD75-33BC-81F7-E9ACF6074FEA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Plugins\CustomRenderPlugin\Shaders\Private">
+      <UniqueIdentifier>{A7E73079-0136-3E92-83B6-A48FE3F5E8AB}</UniqueIdentifier>
+    </Filter>
+    <None Include="..\..\Plugins\CustomRenderPlugin\Shaders\Private\MyShader.usf">
+      <Filter>Plugins\CustomRenderPlugin\Shaders\Private</Filter>
+    </None>
+    <Filter Include="Plugins\CustomRenderPlugin\Source">
+      <UniqueIdentifier>{F1CD4D3D-B494-3A7F-9595-6BF8FF37D1A6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Plugins\CustomRenderPlugin\Source\CustomRenderPlugin">
+      <UniqueIdentifier>{BCDD7E73-F402-37A1-BD21-E4AE8AA723EB}</UniqueIdentifier>
+    </Filter>
+    <None Include="..\..\Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\CustomRenderPlugin.Build.cs">
+      <Filter>Plugins\CustomRenderPlugin\Source\CustomRenderPlugin</Filter>
+    </None>
+    <Filter Include="Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Private">
+      <UniqueIdentifier>{823FCE27-A8D2-33ED-B308-522CDAC2E415}</UniqueIdentifier>
+    </Filter>
+    <ClCompile Include="..\..\Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Private\CustomRenderLibrary.cpp">
+      <Filter>Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Private</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Private\CustomRenderPlugin.cpp">
+      <Filter>Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Private</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Private\MyCustomShader.cpp">
+      <Filter>Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Private</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Private\MyCustomShader.h">
+      <Filter>Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Private</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Private\MyRenderTestLibrary.cpp">
+      <Filter>Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Private</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Private\MyRenderTestLibrary.h">
+      <Filter>Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Private</Filter>
+    </ClInclude>
+    <Filter Include="Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Public">
+      <UniqueIdentifier>{91AFCC18-7431-3657-ADFC-B7982A073D61}</UniqueIdentifier>
+    </Filter>
+    <ClInclude Include="..\..\Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Public\CustomRenderLibrary.h">
+      <Filter>Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Public\CustomRenderPlugin.h">
+      <Filter>Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Public</Filter>
+    </ClInclude>
     <Filter Include="Source">
       <UniqueIdentifier>{F31BBDD1-B3E8-3BCC-9652-680E16935819}</UniqueIdentifier>
     </Filter>

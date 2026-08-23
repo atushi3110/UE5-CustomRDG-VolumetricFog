@@ -4290,6 +4290,18 @@
 		{
 			"Path": "$(ProjectDir)/Binaries/Win64/UnrealEditor.modules",
 			"Type": "RequiredResource"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/CustomRenderPlugin/Binaries/Win64/UnrealEditor-CustomRenderPlugin.dll",
+			"Type": "DynamicLibrary"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/CustomRenderPlugin/Binaries/Win64/UnrealEditor-CustomRenderPlugin.pdb",
+			"Type": "SymbolFile"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/CustomRenderPlugin/Binaries/Win64/UnrealEditor.modules",
+			"Type": "RequiredResource"
 		}
 	],
 	"RuntimeDependencies": [
@@ -28814,6 +28826,10 @@
 			"Type": "UFS"
 		},
 		{
+			"Path": "$(ProjectDir)/Plugins/CustomRenderPlugin/CustomRenderPlugin.uplugin",
+			"Type": "UFS"
+		},
+		{
 			"Path": "$(ProjectDir)/VolumetricFog.uproject",
 			"Type": "UFS"
 		}
@@ -28879,6 +28895,7 @@
 		"CryptoKeys",
 		"CurveEditorTools",
 		"CustomMeshComponent",
+		"CustomRenderPlugin",
 		"DataValidation",
 		"Dataflow",
 		"DatasmithContent",

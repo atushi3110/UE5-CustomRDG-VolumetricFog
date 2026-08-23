@@ -1,6 +1,5 @@
-[18328:9464:0823/224841.069:WARNING:chrome_main_delegate.cc(745)] This is Chrome version 128.0.6613.138 (not a warning)
-[18328:32916:0823/224841.114:ERROR:google_update_settings.cc(265)] Failed opening key Software\Chromium to set usagestats; result: 5
-[18328:9464:0823/224841.137:WARNING:account_consistency_mode_manager.cc(77)] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
-[18328:9464:0823/224846.227:ERROR:device_event_log_impl.cc(196)] [22:48:46.221] USB: usb_service_win.cc:105 SetupDiGetDeviceProperty({{A45C254E-DF1C-4EFD-8020-67D146A850E0}, 6}) failed: 要素が見つかりません。 (0x490)
-[32472:11000:0823/224847.445:WARNING:frame_impl.cc(430)] virtual CefFrameImpl::SendProcessMessage sent to detached frame 5-780CFEC2E2D83CD5F84FD11892F7BF1C will be ignored
-[18328:9464:0823/233852.329:WARNING:pref_notifier_impl.cc(41)] Pref observer for media_router.cast_allow_all_ips found at shutdown.
+[32996:30688:0823/234845.376:WARNING:chrome_main_delegate.cc(745)] This is Chrome version 128.0.6613.138 (not a warning)
+[32996:31392:0823/234845.429:ERROR:google_update_settings.cc(265)] Failed opening key Software\Chromium to set usagestats; result: 5
+[32996:30688:0823/234845.443:WARNING:account_consistency_mode_manager.cc(77)] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
+[32996:30688:0823/234850.874:ERROR:device_event_log_impl.cc(196)] [23:48:50.547] USB: usb_service_win.cc:105 SetupDiGetDeviceProperty({{A45C254E-DF1C-4EFD-8020-67D146A850E0}, 6}) failed: 要素が見つかりません。 (0x490)
+[6364:6856:0823/234851.213:WARNING:frame_impl.cc(430)] virtual CefFrameImpl::SendProcessMessage sent to detached frame 5-A34AC6B8193BA67C5AF7974ED5EAFE7B will be ignored

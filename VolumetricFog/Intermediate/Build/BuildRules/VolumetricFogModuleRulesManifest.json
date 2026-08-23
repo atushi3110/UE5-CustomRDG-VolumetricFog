@@ -1,6 +1,7 @@
 {
 	"SourceFiles": [
 		"C:\\UE5\\Portfolio\\UE5-CustomRDG-VolumetricFog\\VolumetricFog\\Source\\VolumetricFog\\VolumetricFog.Build.cs",
+		"C:\\UE5\\Portfolio\\UE5-CustomRDG-VolumetricFog\\VolumetricFog\\Plugins\\CustomRenderPlugin\\Source\\CustomRenderPlugin\\CustomRenderPlugin.Build.cs",
 		"C:\\UE5\\Portfolio\\UE5-CustomRDG-VolumetricFog\\VolumetricFog\\Source\\VolumetricFog.Target.cs",
 		"C:\\UE5\\Portfolio\\UE5-CustomRDG-VolumetricFog\\VolumetricFog\\Source\\VolumetricFogEditor.Target.cs"
 	],

@@ -1,2 +1,3 @@
-2026/08/23-22:48:41.145 3c18 Creating DB C:\UE5\Portfolio\UE5-CustomRDG-VolumetricFog\VolumetricFog\Saved\webcache_6613\Default\Sync Data\LevelDB since it was missing.
-2026/08/23-22:48:41.182 3c18 Reusing MANIFEST C:\UE5\Portfolio\UE5-CustomRDG-VolumetricFog\VolumetricFog\Saved\webcache_6613\Default\Sync Data\LevelDB/MANIFEST-000001
+2026/08/23-23:48:45.460 7aa0 Reusing MANIFEST C:\UE5\Portfolio\UE5-CustomRDG-VolumetricFog\VolumetricFog\Saved\webcache_6613\Default\Sync Data\LevelDB/MANIFEST-000001
+2026/08/23-23:48:45.470 7aa0 Recovering log #3
+2026/08/23-23:48:45.472 7aa0 Reusing old log C:\UE5\Portfolio\UE5-CustomRDG-VolumetricFog\VolumetricFog\Saved\webcache_6613\Default\Sync Data\LevelDB/000003.log 

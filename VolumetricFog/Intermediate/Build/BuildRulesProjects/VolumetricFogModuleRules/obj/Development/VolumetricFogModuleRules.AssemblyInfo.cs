@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("VolumetricFogModuleRules")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Development")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3870ec17de92f27fb5fec4d9a5f215d47c70dcc8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8d3466fb0c7a3e73e3d2a00e92c69e477840ea13")]
 [assembly: System.Reflection.AssemblyProductAttribute("VolumetricFogModuleRules")]
 [assembly: System.Reflection.AssemblyTitleAttribute("VolumetricFogModuleRules")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

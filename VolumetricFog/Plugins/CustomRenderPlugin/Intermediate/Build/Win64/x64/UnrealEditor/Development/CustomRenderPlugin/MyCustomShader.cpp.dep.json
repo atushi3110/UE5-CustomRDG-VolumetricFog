@@ -1,0 +1,19 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "c:\\ue5\\portfolio\\ue5-customrdg-volumetricfog\\volumetricfog\\plugins\\customrenderplugin\\source\\customrenderplugin\\private\\mycustomshader.cpp",
+        "ProvidedModule": "",
+        "PCH": "c:\\ue5\\portfolio\\ue5-customrdg-volumetricfog\\volumetricfog\\intermediate\\build\\win64\\x64\\volumetricfogeditor\\development\\unrealed\\sharedpch.unrealed.project.valapi.valexpapi.cpp20.h.pch",
+        "Includes": [
+            "c:\\ue5\\portfolio\\ue5-customrdg-volumetricfog\\volumetricfog\\plugins\\customrenderplugin\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\customrenderplugin\\definitions.customrenderplugin.h",
+            "c:\\ue5\\portfolio\\ue5-customrdg-volumetricfog\\volumetricfog\\plugins\\customrenderplugin\\source\\customrenderplugin\\private\\mycustomshader.h",
+            "c:\\program files\\epic games\\ue_5.7\\engine\\source\\runtime\\rendercore\\public\\shaderparameterstruct.h",
+            "c:\\program files\\epic games\\ue_5.7\\engine\\source\\runtime\\rendercore\\public\\rendergraphresources.h",
+            "c:\\program files\\epic games\\ue_5.7\\engine\\source\\runtime\\rhi\\public\\rhitransientresourceallocator.h",
+            "c:\\program files\\epic games\\ue_5.7\\engine\\source\\runtime\\rendercore\\public\\rendergraphparameter.h",
+            "c:\\program files\\epic games\\ue_5.7\\engine\\source\\runtime\\rendercore\\public\\rendergraphresources.inl"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

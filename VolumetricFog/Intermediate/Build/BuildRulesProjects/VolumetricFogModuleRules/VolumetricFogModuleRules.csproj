@@ -14,6 +14,7 @@
     <ProjectReference Include="..\..\..\..\..\..\..\..\Program Files\Epic Games\UE_5.7\Engine\Source\Programs\UnrealBuildTool\UnrealBuildTool.csproj"><Private>false</Private></ProjectReference>
   </ItemGroup>
   <ItemGroup>
+  <Compile Include="..\..\..\..\Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\CustomRenderPlugin.Build.cs"><Link>Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\CustomRenderPlugin.Build.cs</Link></Compile>
   <Compile Include="..\..\..\..\Source\VolumetricFog.Target.cs"><Link>Source\VolumetricFog.Target.cs</Link></Compile>
   <Compile Include="..\..\..\..\Source\VolumetricFogEditor.Target.cs"><Link>Source\VolumetricFogEditor.Target.cs</Link></Compile>
   <Compile Include="..\..\..\..\Source\VolumetricFog\VolumetricFog.Build.cs"><Link>Source\VolumetricFog\VolumetricFog.Build.cs</Link></Compile>
