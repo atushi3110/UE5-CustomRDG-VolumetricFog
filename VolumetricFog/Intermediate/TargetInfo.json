@@ -1,0 +1,14 @@
+{
+	"Targets": [
+		{
+			"Name": "VolumetricFog",
+			"Path": "..\\Source\\VolumetricFog.Target.cs",
+			"Type": "Game"
+		},
+		{
+			"Name": "VolumetricFogEditor",
+			"Path": "..\\Source\\VolumetricFogEditor.Target.cs",
+			"Type": "Editor"
+		}
+	]
+}

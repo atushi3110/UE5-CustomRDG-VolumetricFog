@@ -1,0 +1,14 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "c:\\ue5\\portfolio\\ue5-customrdg-volumetricfog\\volumetricfog\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\volumetricfog\\permoduleinline.gen.cpp",
+        "ProvidedModule": "",
+        "PCH": "c:\\ue5\\portfolio\\ue5-customrdg-volumetricfog\\volumetricfog\\intermediate\\build\\win64\\x64\\volumetricfogeditor\\development\\unrealed\\sharedpch.unrealed.project.valapi.valexpapi.cpp20.h.pch",
+        "Includes": [
+            "c:\\ue5\\portfolio\\ue5-customrdg-volumetricfog\\volumetricfog\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\volumetricfog\\definitions.volumetricfog.h",
+            "c:\\program files\\epic games\\ue_5.7\\engine\\source\\runtime\\core\\public\\hal\\permoduleinline.inl"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}
