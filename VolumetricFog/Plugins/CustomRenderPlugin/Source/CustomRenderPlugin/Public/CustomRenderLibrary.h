@@ -12,5 +12,11 @@ class CUSTOMRENDERPLUGIN_API UCustomRenderLibrary : public UBlueprintFunctionLib
 
 public:
     UFUNCTION(BlueprintCallable, Category = "CustomRender")
-    static void DrawCustomShaderToRenderTarget(UTextureRenderTarget2D* OutputRenderTarget, FLinearColor Color);
+    static void DrawCustomShaderToRenderTarget(
+        UTextureRenderTarget2D* OutputRenderTarget,
+        FVector CameraPosition,
+        FMatrix InvViewProjectionMatrix,
+        float Time,
+        FLinearColor Color
+    );
 };

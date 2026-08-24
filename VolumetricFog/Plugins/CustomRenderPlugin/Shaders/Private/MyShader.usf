@@ -1,12 +1,47 @@
-// C++側の BEGIN_SHADER_PARAMETER_STRUCT(FMyShaderParameters) と完全対応
-// UE5がコンパイル時に自動的にこの定数バッファ構造体を生成してくれます
-
 #include "/Engine/Private/Common.ush"
 
-// C++の SHADER_PARAMETER(FLinearColor, MyColor) と同名で宣言
+float3 CameraPosition;
+float4x4 InvViewProjectionMatrix;
+float Time;
 float4 MyColor;
 
-void MainPS(out float4 OutColor : SV_Target0)
+void MainPS(
+    in float4 SvPosition : SV_Position,
+    out float4 OutColor : SV_Target0
+)
 {
-    OutColor = MyColor; // C++から送られた色を出力
+    // UV座標の計算 (0.0 ～ 1.0)
+    float2 UV = SvPosition.xy * View.BufferSizeAndInvSize.zw;
+
+    // クリップ空間(-1 ~ 1)の座標から世界空間のレイ方向を計算
+    float4 ClipPos = float4(UV.x * 2.0 - 1.0, (1.0 - UV.y) * 2.0 - 1.0, 0.0, 1.0);
+    float4 WorldPos = mul(ClipPos, InvViewProjectionMatrix);
+    WorldPos.xyz /= WorldPos.w;
+
+    float3 RayOrigin = CameraPosition;
+    float3 RayDir = normalize(WorldPos.xyz - CameraPosition);
+
+    // --- レイマーチング処理 ---
+    float StepSize = 10.0;
+    int MaxSteps = 64;
+    float DensityAccum = 0.0;
+
+    float3 CurrentPos = RayOrigin;
+
+    for (int i = 0; i < MaxSteps; i++)
+    {
+        CurrentPos += RayDir * StepSize;
+
+        // 原点(0,0,0)、半径 200 の球体領域をフォグ領域とする
+        float DistanceFromCenter = length(CurrentPos);
+        if (DistanceFromCenter < 200.0)
+        {
+            // 時間経過で密度が揺らぐ簡易計算
+            float Density = (1.0 - (DistanceFromCenter / 200.0)) * (sin(Time * 2.0) * 0.3 + 0.7);
+            DensityAccum += Density * 0.05;
+        }
+    }
+
+    // 累積した密度に基づいてフォグの色を出力
+    OutColor = float4(MyColor.rgb * DensityAccum, saturate(DensityAccum));
 }

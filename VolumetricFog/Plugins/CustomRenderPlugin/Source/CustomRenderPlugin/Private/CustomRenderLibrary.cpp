@@ -5,18 +5,26 @@
 #include "PixelShaderUtils.h"
 #include "TextureResource.h"
 
-void UCustomRenderLibrary::DrawCustomShaderToRenderTarget(UTextureRenderTarget2D* OutputRenderTarget, FLinearColor Color)
+void UCustomRenderLibrary::DrawCustomShaderToRenderTarget(
+    UTextureRenderTarget2D* OutputRenderTarget,
+    FVector CameraPosition,
+    FMatrix InvViewProjectionMatrix,
+    float Time,
+    FLinearColor Color)
 {
     if (!OutputRenderTarget) return;
 
     FTextureRenderTargetResource* RenderTargetResource = OutputRenderTarget->GameThread_GetRenderTargetResource();
 
+    // LWC(Large World Coordinates) から float 精度へ安全にキャスト
+    FVector3f PassCameraPos = (FVector3f)CameraPosition;
+    FMatrix44f PassInvViewProj = (FMatrix44f)InvViewProjectionMatrix;
+
     ENQUEUE_RENDER_COMMAND(DrawCustomShaderCommand)(
-        [RenderTargetResource, Color](FRHICommandListImmediate& RHICmdList)
+        [RenderTargetResource, PassCameraPos, PassInvViewProj, Time, Color](FRHICommandListImmediate& RHICmdList)
         {
             FRDGBuilder GraphBuilder(RHICmdList);
 
-            // 1. GetRenderTargetTexture() から直接 RDG テクスチャとして登録
             FRHITexture* RHITexture = RenderTargetResource->GetRenderTargetTexture();
             if (!RHITexture) return;
 
@@ -24,12 +32,13 @@ void UCustomRenderLibrary::DrawCustomShaderToRenderTarget(UTextureRenderTarget2D
                 CreateRenderTarget(RHITexture, TEXT("CustomRenderOutput"))
             );
 
-            // 2. パラメータ設定
             FMyCustomPixelShader::FParameters* PassParameters = GraphBuilder.AllocParameters<FMyCustomPixelShader::FParameters>();
+            PassParameters->CameraPosition = PassCameraPos;
+            PassParameters->InvViewProjectionMatrix = PassInvViewProj;
+            PassParameters->Time = Time;
             PassParameters->MyColor = Color;
             PassParameters->RenderTargets[0] = FRenderTargetBinding(OutputTexture, ERenderTargetLoadAction::ENoAction);
 
-            // 3. パスの追加と実行
             FGlobalShaderMap* ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
             TShaderMapRef<FMyCustomPixelShader> PixelShader(ShaderMap);
 
