@@ -1,29 +1,71 @@
-#include "/Engine/Private/Common.ush"
+#include "/Engine/Public/Platform.ush"
 
 float3 CameraPosition;
 float4x4 InvViewProjectionMatrix;
 float Time;
 float4 MyColor;
 
-void MainPS(
-    in float4 SvPosition : SV_Position,
-    out float4 OutColor : SV_Target0
-)
+// --- 簡易 3D ハッシュ / ノイズ関数 ---
+float hash(float3 p)
 {
-    // UV座標の計算 (0.0 ～ 1.0)
-    float2 UV = SvPosition.xy * View.BufferSizeAndInvSize.zw;
+    p = frac(p * float3(0.1031, 0.1030, 0.0973));
+    p += dot(p, p.yzx + 33.33);
+    return frac((p.x + p.y) * p.z);
+}
 
-    // クリップ空間(-1 ~ 1)の座標から世界空間のレイ方向を計算
-    float4 ClipPos = float4(UV.x * 2.0 - 1.0, (1.0 - UV.y) * 2.0 - 1.0, 0.0, 1.0);
-    float4 WorldPos = mul(ClipPos, InvViewProjectionMatrix);
-    WorldPos.xyz /= WorldPos.w;
+// 3D 補間ノイズ (Value Noise)
+float noise3D(float3 p)
+{
+    float3 i = floor(p);
+    float3 f = frac(p);
+    f = f * f * (3.0 - 2.0 * f); // Smoothstep 補間
 
+    return lerp(
+        lerp(lerp(hash(i + float3(0, 0, 0)), hash(i + float3(1, 0, 0)), f.x),
+             lerp(hash(i + float3(0, 1, 0)), hash(i + float3(1, 1, 0)), f.x), f.y),
+        lerp(lerp(hash(i + float3(0, 0, 1)), hash(i + float3(1, 0, 1)), f.x),
+             lerp(hash(i + float3(0, 1, 1)), hash(i + float3(1, 1, 1)), f.x), f.y),
+        f.z
+    );
+}
+
+// FBM (Fractal Brownian Motion)
+float fbm(float3 p)
+{
+    float value = 0.0;
+    float amplitude = 0.5;
+    for (int i = 0; i < 3; i++)
+    {
+        value += amplitude * noise3D(p);
+        p *= 2.0;
+        amplitude *= 0.5;
+    }
+    return value;
+}
+
+void MainPS(
+    in float4 InPosition : SV_POSITION,
+    out float4 OutColor : SV_Target0)
+{
+    // 1. レイの再構築（修正ポイント）
+    // SV_POSITION (ピクセル座標) を 0.0 ～ 1.0 の Screen UV に変換
+    float2 UV = InPosition.xy / float2(1920.0, 1080.0);
+    
+    // NDC 座標 (X: -1~1, Y: 1~-1, Z: 近平面 0.001)
+    float4 ClipPos = float4(UV.x * 2.0 - 1.0, (1.0 - UV.y) * 2.0 - 1.0, 0.001, 1.0);
+    
+    // 逆ビュープロジェクション行列を乗算してワールド目標座標を取得
+    // ※ mul(ClipPos, InvViewProjectionMatrix) の積の順序によりワールド目標点を展開
+    float4 WorldPosTarget = mul(ClipPos, InvViewProjectionMatrix);
+    WorldPosTarget.xyz /= WorldPosTarget.w;
+
+    // カメラ位置から目標点への方向ベクトル（レイ）を算出
     float3 RayOrigin = CameraPosition;
-    float3 RayDir = normalize(WorldPos.xyz - CameraPosition);
+    float3 RayDir = normalize(WorldPosTarget.xyz - RayOrigin);
 
-    // --- レイマーチング処理 ---
-    float StepSize = 10.0;
-    int MaxSteps = 64;
+    // 2. レイマーチング処理
+    float StepSize = 80.0;
+    int MaxSteps = 32;
     float DensityAccum = 0.0;
 
     float3 CurrentPos = RayOrigin;
@@ -32,16 +74,27 @@ void MainPS(
     {
         CurrentPos += RayDir * StepSize;
 
-        // 原点(0,0,0)、半径 200 の球体領域をフォグ領域とする
+        // 原点 (0,0,0) を中心とする球体マスクの範囲
         float DistanceFromCenter = length(CurrentPos);
-        if (DistanceFromCenter < 200.0)
+        if (DistanceFromCenter < 2000.0)
         {
-            // 時間経過で密度が揺らぐ簡易計算
-            float Density = (1.0 - (DistanceFromCenter / 200.0)) * (sin(Time * 2.0) * 0.3 + 0.7);
-            DensityAccum += Density * 0.05;
+            // 時間経過（Time）によるノイズ座標の移動
+            float3 NoisePos = CurrentPos * 0.001 + float3(Time * 2.0, Time * 1.0, Time * 0.5);
+            
+            float NoiseValue = fbm(NoisePos);
+            
+            // 密度のカットオフ処理
+            float CloudDensity = saturate((NoiseValue - 0.3) * 3.0);
+            
+            // 距離減衰マスク
+            float SphereMask = pow(saturate(1.0 - (DistanceFromCenter / 2000.0)), 2.0);
+
+            float Density = SphereMask * CloudDensity * 0.15;
+            
+            DensityAccum += Density;
         }
     }
 
-    // 累積した密度に基づいてフォグの色を出力
-    OutColor = float4(MyColor.rgb * DensityAccum, saturate(DensityAccum));
+    // 3. 出力
+    OutColor = float4(MyColor.rgb * DensityAccum, 1.0);
 }

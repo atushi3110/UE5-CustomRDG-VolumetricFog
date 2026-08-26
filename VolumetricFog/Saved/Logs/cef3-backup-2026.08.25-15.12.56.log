@@ -1,0 +1,5 @@
+[26748:28132:0826/001250.600:WARNING:chrome_main_delegate.cc(745)] This is Chrome version 128.0.6613.138 (not a warning)
+[26748:30696:0826/001250.658:ERROR:google_update_settings.cc(265)] Failed opening key Software\Chromium to set usagestats; result: 5
+[26748:28132:0826/001250.671:WARNING:account_consistency_mode_manager.cc(77)] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
+[26748:28132:0826/001256.246:ERROR:device_event_log_impl.cc(196)] [00:12:55.914] USB: usb_service_win.cc:105 SetupDiGetDeviceProperty({{A45C254E-DF1C-4EFD-8020-67D146A850E0}, 6}) failed: 要素が見つかりません。 (0x490)
+[20056:29256:0826/001256.575:WARNING:frame_impl.cc(430)] virtual CefFrameImpl::SendProcessMessage sent to detached frame 5-B6FA76978D3F6CB583D54B2E730E8129 will be ignored

@@ -12,9 +12,8 @@ static_assert(!UE_WITH_CONSTINIT_UOBJECT, "This generated code can only be compi
 void EmptyLinkFunctionForGeneratedCodeCustomRenderLibrary() {}
 
 // ********** Begin Cross Module References ********************************************************
+COREUOBJECT_API UClass* Z_Construct_UClass_UObject_NoRegister();
 COREUOBJECT_API UScriptStruct* Z_Construct_UScriptStruct_FLinearColor();
-COREUOBJECT_API UScriptStruct* Z_Construct_UScriptStruct_FMatrix();
-COREUOBJECT_API UScriptStruct* Z_Construct_UScriptStruct_FVector();
 CUSTOMRENDERPLUGIN_API UClass* Z_Construct_UClass_UCustomRenderLibrary();
 CUSTOMRENDERPLUGIN_API UClass* Z_Construct_UClass_UCustomRenderLibrary_NoRegister();
 ENGINE_API UClass* Z_Construct_UClass_UBlueprintFunctionLibrary();
@@ -25,33 +24,30 @@ UPackage* Z_Construct_UPackage__Script_CustomRenderPlugin();
 // ********** Begin Class UCustomRenderLibrary Function DrawCustomShaderToRenderTarget *************
 struct Z_Construct_UFunction_UCustomRenderLibrary_DrawCustomShaderToRenderTarget_Statics
 {
-	struct FMatrix
-	{
-		FPlane XPlane;
-		FPlane YPlane;
-		FPlane ZPlane;
-		FPlane WPlane;
-	};
-
 	struct CustomRenderLibrary_eventDrawCustomShaderToRenderTarget_Parms
 	{
+		UObject* WorldContextObject;
 		UTextureRenderTarget2D* OutputRenderTarget;
-		FVector CameraPosition;
-		FMatrix InvViewProjectionMatrix;
 		float Time;
 		FLinearColor Color;
 	};
 #if WITH_METADATA
 	static constexpr UECodeGen_Private::FMetaDataPairParam Function_MetaDataParams[] = {
 		{ "Category", "CustomRender" },
+#if !UE_BUILD_SHIPPING
+		{ "Comment", "// WorldContextObject \xef\xbf\xbd\xef\xbf\xbd\xc7\x89\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd""ABP\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd World context \xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbdn\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xce\x83J\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbds\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbdv\xef\xbf\xbdZ\n" },
+#endif
 		{ "ModuleRelativePath", "Public/CustomRenderLibrary.h" },
+#if !UE_BUILD_SHIPPING
+		{ "ToolTip", "WorldContextObject \xef\xbf\xbd\xef\xbf\xbd\xc7\x89\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd""ABP\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd World context \xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbdn\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xce\x83J\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbds\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbdv\xef\xbf\xbdZ" },
+#endif
+		{ "WorldContext", "WorldContextObject" },
 	};
 #endif // WITH_METADATA
 
 // ********** Begin Function DrawCustomShaderToRenderTarget constinit property declarations ********
+	static const UECodeGen_Private::FObjectPropertyParams NewProp_WorldContextObject;
 	static const UECodeGen_Private::FObjectPropertyParams NewProp_OutputRenderTarget;
-	static const UECodeGen_Private::FStructPropertyParams NewProp_CameraPosition;
-	static const UECodeGen_Private::FStructPropertyParams NewProp_InvViewProjectionMatrix;
 	static const UECodeGen_Private::FFloatPropertyParams NewProp_Time;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_Color;
 	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
@@ -60,15 +56,13 @@ struct Z_Construct_UFunction_UCustomRenderLibrary_DrawCustomShaderToRenderTarget
 };
 
 // ********** Begin Function DrawCustomShaderToRenderTarget Property Definitions *******************
+const UECodeGen_Private::FObjectPropertyParams Z_Construct_UFunction_UCustomRenderLibrary_DrawCustomShaderToRenderTarget_Statics::NewProp_WorldContextObject = { "WorldContextObject", nullptr, (EPropertyFlags)0x0010000000000080, UECodeGen_Private::EPropertyGenFlags::Object, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(CustomRenderLibrary_eventDrawCustomShaderToRenderTarget_Parms, WorldContextObject), Z_Construct_UClass_UObject_NoRegister, METADATA_PARAMS(0, nullptr) };
 const UECodeGen_Private::FObjectPropertyParams Z_Construct_UFunction_UCustomRenderLibrary_DrawCustomShaderToRenderTarget_Statics::NewProp_OutputRenderTarget = { "OutputRenderTarget", nullptr, (EPropertyFlags)0x0010000000000080, UECodeGen_Private::EPropertyGenFlags::Object, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(CustomRenderLibrary_eventDrawCustomShaderToRenderTarget_Parms, OutputRenderTarget), Z_Construct_UClass_UTextureRenderTarget2D_NoRegister, METADATA_PARAMS(0, nullptr) };
-const UECodeGen_Private::FStructPropertyParams Z_Construct_UFunction_UCustomRenderLibrary_DrawCustomShaderToRenderTarget_Statics::NewProp_CameraPosition = { "CameraPosition", nullptr, (EPropertyFlags)0x0010000000000080, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(CustomRenderLibrary_eventDrawCustomShaderToRenderTarget_Parms, CameraPosition), Z_Construct_UScriptStruct_FVector, METADATA_PARAMS(0, nullptr) };
-const UECodeGen_Private::FStructPropertyParams Z_Construct_UFunction_UCustomRenderLibrary_DrawCustomShaderToRenderTarget_Statics::NewProp_InvViewProjectionMatrix = { "InvViewProjectionMatrix", nullptr, (EPropertyFlags)0x0010000000000080, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(CustomRenderLibrary_eventDrawCustomShaderToRenderTarget_Parms, InvViewProjectionMatrix), Z_Construct_UScriptStruct_FMatrix, METADATA_PARAMS(0, nullptr) };
 const UECodeGen_Private::FFloatPropertyParams Z_Construct_UFunction_UCustomRenderLibrary_DrawCustomShaderToRenderTarget_Statics::NewProp_Time = { "Time", nullptr, (EPropertyFlags)0x0010000000000080, UECodeGen_Private::EPropertyGenFlags::Float, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(CustomRenderLibrary_eventDrawCustomShaderToRenderTarget_Parms, Time), METADATA_PARAMS(0, nullptr) };
 const UECodeGen_Private::FStructPropertyParams Z_Construct_UFunction_UCustomRenderLibrary_DrawCustomShaderToRenderTarget_Statics::NewProp_Color = { "Color", nullptr, (EPropertyFlags)0x0010000000000080, UECodeGen_Private::EPropertyGenFlags::Struct, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(CustomRenderLibrary_eventDrawCustomShaderToRenderTarget_Parms, Color), Z_Construct_UScriptStruct_FLinearColor, METADATA_PARAMS(0, nullptr) };
 const UECodeGen_Private::FPropertyParamsBase* const Z_Construct_UFunction_UCustomRenderLibrary_DrawCustomShaderToRenderTarget_Statics::PropPointers[] = {
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UFunction_UCustomRenderLibrary_DrawCustomShaderToRenderTarget_Statics::NewProp_WorldContextObject,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UFunction_UCustomRenderLibrary_DrawCustomShaderToRenderTarget_Statics::NewProp_OutputRenderTarget,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UFunction_UCustomRenderLibrary_DrawCustomShaderToRenderTarget_Statics::NewProp_CameraPosition,
-	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UFunction_UCustomRenderLibrary_DrawCustomShaderToRenderTarget_Statics::NewProp_InvViewProjectionMatrix,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UFunction_UCustomRenderLibrary_DrawCustomShaderToRenderTarget_Statics::NewProp_Time,
 	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UFunction_UCustomRenderLibrary_DrawCustomShaderToRenderTarget_Statics::NewProp_Color,
 };
@@ -90,14 +84,13 @@ UFunction* Z_Construct_UFunction_UCustomRenderLibrary_DrawCustomShaderToRenderTa
 }
 DEFINE_FUNCTION(UCustomRenderLibrary::execDrawCustomShaderToRenderTarget)
 {
+	P_GET_OBJECT(UObject,Z_Param_WorldContextObject);
 	P_GET_OBJECT(UTextureRenderTarget2D,Z_Param_OutputRenderTarget);
-	P_GET_STRUCT(FVector,Z_Param_CameraPosition);
-	P_GET_STRUCT(FMatrix,Z_Param_InvViewProjectionMatrix);
 	P_GET_PROPERTY(FFloatProperty,Z_Param_Time);
 	P_GET_STRUCT(FLinearColor,Z_Param_Color);
 	P_FINISH;
 	P_NATIVE_BEGIN;
-	UCustomRenderLibrary::DrawCustomShaderToRenderTarget(Z_Param_OutputRenderTarget,Z_Param_CameraPosition,Z_Param_InvViewProjectionMatrix,Z_Param_Time,Z_Param_Color);
+	UCustomRenderLibrary::DrawCustomShaderToRenderTarget(Z_Param_WorldContextObject,Z_Param_OutputRenderTarget,Z_Param_Time,Z_Param_Color);
 	P_NATIVE_END;
 }
 // ********** End Class UCustomRenderLibrary Function DrawCustomShaderToRenderTarget ***************
@@ -148,7 +141,7 @@ struct Z_Construct_UClass_UCustomRenderLibrary_Statics
 	};
 	static UObject* (*const DependentSingletons[])();
 	static constexpr FClassFunctionLinkInfo FuncInfo[] = {
-		{ &Z_Construct_UFunction_UCustomRenderLibrary_DrawCustomShaderToRenderTarget, "DrawCustomShaderToRenderTarget" }, // 2416157319
+		{ &Z_Construct_UFunction_UCustomRenderLibrary_DrawCustomShaderToRenderTarget, "DrawCustomShaderToRenderTarget" }, // 3658237731
 	};
 	static_assert(UE_ARRAY_COUNT(FuncInfo) < 2048);
 	static constexpr FCppClassTypeInfoStatic StaticCppClassTypeInfo = {
@@ -198,10 +191,10 @@ UCustomRenderLibrary::~UCustomRenderLibrary() {}
 struct Z_CompiledInDeferFile_FID_UE5_Portfolio_UE5_CustomRDG_VolumetricFog_VolumetricFog_Plugins_CustomRenderPlugin_Source_CustomRenderPlugin_Public_CustomRenderLibrary_h__Script_CustomRenderPlugin_Statics
 {
 	static constexpr FClassRegisterCompiledInInfo ClassInfo[] = {
-		{ Z_Construct_UClass_UCustomRenderLibrary, UCustomRenderLibrary::StaticClass, TEXT("UCustomRenderLibrary"), &Z_Registration_Info_UClass_UCustomRenderLibrary, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UCustomRenderLibrary), 286930527U) },
+		{ Z_Construct_UClass_UCustomRenderLibrary, UCustomRenderLibrary::StaticClass, TEXT("UCustomRenderLibrary"), &Z_Registration_Info_UClass_UCustomRenderLibrary, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UCustomRenderLibrary), 2456735215U) },
 	};
 }; // Z_CompiledInDeferFile_FID_UE5_Portfolio_UE5_CustomRDG_VolumetricFog_VolumetricFog_Plugins_CustomRenderPlugin_Source_CustomRenderPlugin_Public_CustomRenderLibrary_h__Script_CustomRenderPlugin_Statics 
-static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_UE5_Portfolio_UE5_CustomRDG_VolumetricFog_VolumetricFog_Plugins_CustomRenderPlugin_Source_CustomRenderPlugin_Public_CustomRenderLibrary_h__Script_CustomRenderPlugin_219818734{
+static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_UE5_Portfolio_UE5_CustomRDG_VolumetricFog_VolumetricFog_Plugins_CustomRenderPlugin_Source_CustomRenderPlugin_Public_CustomRenderLibrary_h__Script_CustomRenderPlugin_886030873{
 	TEXT("/Script/CustomRenderPlugin"),
 	Z_CompiledInDeferFile_FID_UE5_Portfolio_UE5_CustomRDG_VolumetricFog_VolumetricFog_Plugins_CustomRenderPlugin_Source_CustomRenderPlugin_Public_CustomRenderLibrary_h__Script_CustomRenderPlugin_Statics::ClassInfo, UE_ARRAY_COUNT(Z_CompiledInDeferFile_FID_UE5_Portfolio_UE5_CustomRDG_VolumetricFog_VolumetricFog_Plugins_CustomRenderPlugin_Source_CustomRenderPlugin_Public_CustomRenderLibrary_h__Script_CustomRenderPlugin_Statics::ClassInfo),
 	nullptr, 0,

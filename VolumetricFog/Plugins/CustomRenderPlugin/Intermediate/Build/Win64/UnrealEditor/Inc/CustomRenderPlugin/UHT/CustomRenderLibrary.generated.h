@@ -15,6 +15,7 @@
 #include "UObject/ScriptMacros.h"
 
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
+class UObject;
 class UTextureRenderTarget2D;
 struct FLinearColor;
 

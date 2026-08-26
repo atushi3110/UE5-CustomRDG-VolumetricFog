@@ -11,11 +11,11 @@ class CUSTOMRENDERPLUGIN_API UCustomRenderLibrary : public UBlueprintFunctionLib
     GENERATED_BODY()
 
 public:
-    UFUNCTION(BlueprintCallable, Category = "CustomRender")
+    // WorldContextObject を追加し、BPからは World context だけ渡せばカメラ行列を自動計算
+    UFUNCTION(BlueprintCallable, Category = "CustomRender", meta = (WorldContext = "WorldContextObject"))
     static void DrawCustomShaderToRenderTarget(
+        UObject* WorldContextObject,
         UTextureRenderTarget2D* OutputRenderTarget,
-        FVector CameraPosition,
-        FMatrix InvViewProjectionMatrix,
         float Time,
         FLinearColor Color
     );

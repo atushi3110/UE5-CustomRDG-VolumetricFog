@@ -1,0 +1,11 @@
+[30936:14464:0825/220955.466:WARNING:chrome_main_delegate.cc(745)] This is Chrome version 128.0.6613.138 (not a warning)
+[30936:30348:0825/220955.544:ERROR:google_update_settings.cc(265)] Failed opening key Software\Chromium to set usagestats; result: 5
+[30936:14464:0825/220955.590:WARNING:account_consistency_mode_manager.cc(77)] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
+[30936:14464:0825/221002.796:ERROR:device_event_log_impl.cc(196)] [22:10:02.559] USB: usb_service_win.cc:105 SetupDiGetDeviceProperty({{A45C254E-DF1C-4EFD-8020-67D146A850E0}, 6}) failed: 要素が見つかりません。 (0x490)
+[29972:28844:0825/221004.454:WARNING:frame_impl.cc(430)] virtual CefFrameImpl::SendProcessMessage sent to detached frame 5-4446E0F0757556E4D83983A8970491EE will be ignored
+[30936:14464:0825/224801.453:ERROR:device_event_log_impl.cc(196)] [22:48:01.220] USB: usb_service_win.cc:105 SetupDiGetDeviceProperty({{A45C254E-DF1C-4EFD-8020-67D146A850E0}, 6}) failed: 要素が見つかりません。 (0x490)
+[30936:14464:0825/224801.453:ERROR:device_event_log_impl.cc(196)] [22:48:01.236] USB: usb_service_win.cc:308 SetupDiEnumDeviceInterfaces: データはこれ以上ありません。 (0x103)
+[30936:14464:0825/224804.121:ERROR:usb_descriptors.cc(166)] Device descriptor parsing error.
+[30936:14464:0825/224804.121:ERROR:device_event_log_impl.cc(196)] [22:48:04.121] USB: usb_device_win.cc:95 Failed to read descriptors from \\?\usb#vid_054c&pid_0fb0#6&3365fbaf&0&6#{a5dcbf10-6530-11d2-901f-00c04fb951ed}.
+[30936:14464:0825/224852.126:ERROR:device_event_log_impl.cc(196)] [22:48:52.035] USB: usb_service_win.cc:105 SetupDiGetDeviceProperty({{A45C254E-DF1C-4EFD-8020-67D146A850E0}, 6}) failed: 要素が見つかりません。 (0x490)
+[30936:14464:0825/224852.126:ERROR:device_event_log_impl.cc(196)] [22:48:52.053] USB: usb_service_win.cc:308 SetupDiEnumDeviceInterfaces: データはこれ以上ありません。 (0x103)
