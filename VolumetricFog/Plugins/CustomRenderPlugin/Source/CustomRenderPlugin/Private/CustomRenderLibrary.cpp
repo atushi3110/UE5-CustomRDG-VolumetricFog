@@ -75,6 +75,12 @@ void UCustomRenderLibrary::DrawCustomShaderToRenderTarget(
             PassParameters->Time = Time;
             PassParameters->MyColor = Color;
 
+            FVector3f LightDir = FVector3f(0.5f, 0.5f, -1.0f).GetSafeNormal();
+            PassParameters->LightDirection = LightDir;
+
+            // 太陽の色と強度（RGB + アルファ/強度）
+            PassParameters->LightColor = FLinearColor(1.0f, 0.95f, 0.8f, 3.0f); // ほんのり温かみのある白色（強度3.0）
+
             // レンダーターゲットの設定
             PassParameters->RenderTargets[0] = FRenderTargetBinding(OutputTexture, ERenderTargetLoadAction::ENoAction);
 

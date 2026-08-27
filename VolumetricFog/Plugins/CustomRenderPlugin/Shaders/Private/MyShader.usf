@@ -1,11 +1,19 @@
 #include "/Engine/Public/Platform.ush"
 
+// C++（PassParameters）から渡されるグローバル変数
 float3 CameraPosition;
 float4x4 InvViewProjectionMatrix;
+float2 ScreenSize;
 float Time;
-float4 MyColor;
+float4 MyColor; // 雲のベース色（例: 白）
 
-// --- 簡易 3D ハッシュ / ノイズ関数 ---
+// ★ ライティング・色付け用パラメータ
+float3 LightDirection; // 太陽光の方向
+float4 LightColor; // 太陽光の色と強度（例: 金色・明るい橙色）
+
+// -----------------------------------------------------------------------------
+// 簡易 3D ハッシュ / ノイズ関数
+// -----------------------------------------------------------------------------
 float hash(float3 p)
 {
     p = frac(p * float3(0.1031, 0.1030, 0.0973));
@@ -13,12 +21,11 @@ float hash(float3 p)
     return frac((p.x + p.y) * p.z);
 }
 
-// 3D 補間ノイズ (Value Noise)
 float noise3D(float3 p)
 {
     float3 i = floor(p);
     float3 f = frac(p);
-    f = f * f * (3.0 - 2.0 * f); // Smoothstep 補間
+    f = f * f * (3.0 - 2.0 * f);
 
     return lerp(
         lerp(lerp(hash(i + float3(0, 0, 0)), hash(i + float3(1, 0, 0)), f.x),
@@ -29,7 +36,6 @@ float noise3D(float3 p)
     );
 }
 
-// FBM (Fractal Brownian Motion)
 float fbm(float3 p)
 {
     float value = 0.0;
@@ -43,30 +49,69 @@ float fbm(float3 p)
     return value;
 }
 
+// -----------------------------------------------------------------------------
+// ヘルパー関数: 指定座標の密度を計算
+// -----------------------------------------------------------------------------
+float GetCloudDensity(float3 Pos, float TimeVal)
+{
+    float DistanceFromCenter = length(Pos);
+    if (DistanceFromCenter >= 2000.0)
+    {
+        return 0.0;
+    }
+
+    float3 NoisePos = Pos * 0.001 + float3(TimeVal * 2.0, TimeVal * 1.0, TimeVal * 0.5);
+    float NoiseValue = fbm(NoisePos);
+    
+    float CloudDensity = saturate((NoiseValue - 0.3) * 3.0);
+    float SphereMask = pow(saturate(1.0 - (DistanceFromCenter / 2000.0)), 2.0);
+
+    return SphereMask * CloudDensity * 0.15;
+}
+
+// -----------------------------------------------------------------------------
+// Henyey-Greenstein 位相関数（前方散乱）
+// -----------------------------------------------------------------------------
+float HenyeyGreenstein(float CosTheta, float g)
+{
+    float g2 = g * g;
+    return (1.0 - g2) / (4.0 * 3.14159265 * pow(1.0 + g2 - 2.0 * g * CosTheta, 1.5));
+}
+
+// =============================================================================
+// メインピクセルシェーダー
+// =============================================================================
 void MainPS(
     in float4 InPosition : SV_POSITION,
     out float4 OutColor : SV_Target0)
 {
-    // 1. レイの再構築（修正ポイント）
-    // SV_POSITION (ピクセル座標) を 0.0 ～ 1.0 の Screen UV に変換
-    float2 UV = InPosition.xy / float2(1920.0, 1080.0);
+    // 1. レイの再構築
+    float2 UV = InPosition.xy / ScreenSize;
+    float4 ClipPos = float4(UV.x * 2.0 - 1.0, (1.0 - UV.y) * 2.0 - 1.0, 1.0, 1.0);
     
-    // NDC 座標 (X: -1~1, Y: 1~-1, Z: 近平面 0.001)
-    float4 ClipPos = float4(UV.x * 2.0 - 1.0, (1.0 - UV.y) * 2.0 - 1.0, 0.001, 1.0);
-    
-    // 逆ビュープロジェクション行列を乗算してワールド目標座標を取得
-    // ※ mul(ClipPos, InvViewProjectionMatrix) の積の順序によりワールド目標点を展開
     float4 WorldPosTarget = mul(ClipPos, InvViewProjectionMatrix);
     WorldPosTarget.xyz /= WorldPosTarget.w;
 
-    // カメラ位置から目標点への方向ベクトル（レイ）を算出
     float3 RayOrigin = CameraPosition;
     float3 RayDir = normalize(WorldPosTarget.xyz - RayOrigin);
 
-    // 2. レイマーチング処理
+    // 2. ライティングの事前計算
+    float3 LightDirNorm = normalize(-LightDirection);
+    float CosTheta = dot(RayDir, LightDirNorm);
+    
+    // リムライト（太陽方向を向いたときの輝き）
+    float PhaseFunction = HenyeyGreenstein(CosTheta, 0.6);
+
+    // ★ 色付け用の定数設定（見た目を分かりやすく調整）
+    float3 ShadowColor = float3(0.15, 0.2, 0.35); // 影の色（青みがかったダークブルー）
+    float3 AmbientLight = float3(0.3, 0.4, 0.5) * 0.8; // 環境光（空からの照り返し）
+
+    // 3. レイマーチング処理
     float StepSize = 80.0;
     int MaxSteps = 32;
-    float DensityAccum = 0.0;
+
+    float3 FinalColor = float3(0.0, 0.0, 0.0);
+    float Transmittance = 1.0;
 
     float3 CurrentPos = RayOrigin;
 
@@ -74,27 +119,52 @@ void MainPS(
     {
         CurrentPos += RayDir * StepSize;
 
-        // 原点 (0,0,0) を中心とする球体マスクの範囲
-        float DistanceFromCenter = length(CurrentPos);
-        if (DistanceFromCenter < 2000.0)
+        // ★ 追加: 地面より下（Z < 0 などの領域）や、あまりに高すぎる位置は計算をスキップしてノイズを防ぐ
+        // (※雲の配置高度に合わせて Z の範囲は調整してください)
+        if (CurrentPos.z < -100.0f)
         {
-            // 時間経過（Time）によるノイズ座標の移動
-            float3 NoisePos = CurrentPos * 0.001 + float3(Time * 2.0, Time * 1.0, Time * 0.5);
-            
-            float NoiseValue = fbm(NoisePos);
-            
-            // 密度のカットオフ処理
-            float CloudDensity = saturate((NoiseValue - 0.3) * 3.0);
-            
-            // 距離減衰マスク
-            float SphereMask = pow(saturate(1.0 - (DistanceFromCenter / 2000.0)), 2.0);
+            continue;
+        }
 
-            float Density = SphereMask * CloudDensity * 0.15;
+        float Density = GetCloudDensity(CurrentPos, Time);
+
+        if (Density > 0.001)
+        {
+            // セルフシャドウ計算
+            float LightStepSize = 100.0;
+            int LightMaxSteps = 6;
+            float LightDensityAccum = 0.0;
+
+            for (int j = 1; j <= LightMaxSteps; j++)
+            {
+                float3 LightSamplePos = CurrentPos + LightDirNorm * (j * LightStepSize);
+                LightDensityAccum += GetCloudDensity(LightSamplePos, Time);
+            }
+
+            float LightTransmittance = exp(-LightDensityAccum * 1.5);
+
+            // ライティング計算
+            float3 DirectLight = LightColor.rgb * LightTransmittance * PhaseFunction;
+            float3 IndirectLight = lerp(ShadowColor, AmbientLight, LightTransmittance);
+            float3 StepColor = (DirectLight + IndirectLight) * MyColor.rgb;
+
+            float StepTransmittance = exp(-Density * StepSize * 0.01);
             
-            DensityAccum += Density;
+            // ★ 追加: 値が爆発（NAN/INF）しないよう saturate や clamp で保護
+            FinalColor += saturate(StepColor) * Density * Transmittance * StepSize * 0.01;
+
+            Transmittance *= StepTransmittance;
+
+            if (Transmittance < 0.01)
+            {
+                break;
+            }
         }
     }
 
-    // 3. 出力
-    OutColor = float4(MyColor.rgb * DensityAccum, 1.0);
+    // ★ 追加: アルファ値とカラーの確定（saturateで 0.0～1.0 に安全に収める）
+    float CloudAlpha = saturate(1.0 - Transmittance);
+    FinalColor = saturate(FinalColor);
+
+    OutColor = float4(FinalColor, CloudAlpha);
 }

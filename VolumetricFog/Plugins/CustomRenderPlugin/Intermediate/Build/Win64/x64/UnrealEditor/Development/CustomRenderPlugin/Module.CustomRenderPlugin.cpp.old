@@ -3,6 +3,6 @@
 #include "C:/UE5/Portfolio/UE5-CustomRDG-VolumetricFog/VolumetricFog/Plugins/CustomRenderPlugin/Intermediate/Build/Win64/UnrealEditor/Inc/CustomRenderPlugin/UHT/CustomRenderPlugin.init.gen.cpp"
 #include "C:/UE5/Portfolio/UE5-CustomRDG-VolumetricFog/VolumetricFog/Plugins/CustomRenderPlugin/Intermediate/Build/Win64/UnrealEditor/Inc/CustomRenderPlugin/UHT/MyRenderTestLibrary.gen.cpp"
 #include "C:/UE5/Portfolio/UE5-CustomRDG-VolumetricFog/VolumetricFog/Plugins/CustomRenderPlugin/Intermediate/Build/Win64/x64/UnrealEditor/Development/CustomRenderPlugin/PerModuleInline.gen.cpp"
+#include "C:/UE5/Portfolio/UE5-CustomRDG-VolumetricFog/VolumetricFog/Plugins/CustomRenderPlugin/Source/CustomRenderPlugin/Private/CustomRenderLibrary.cpp"
 #include "C:/UE5/Portfolio/UE5-CustomRDG-VolumetricFog/VolumetricFog/Plugins/CustomRenderPlugin/Source/CustomRenderPlugin/Private/CustomRenderPlugin.cpp"
-#include "C:/UE5/Portfolio/UE5-CustomRDG-VolumetricFog/VolumetricFog/Plugins/CustomRenderPlugin/Source/CustomRenderPlugin/Private/MyCustomShader.cpp"
 #include "C:/UE5/Portfolio/UE5-CustomRDG-VolumetricFog/VolumetricFog/Plugins/CustomRenderPlugin/Source/CustomRenderPlugin/Private/MyRenderTestLibrary.cpp"
