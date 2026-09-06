@@ -6,7 +6,6 @@
 
 class FMyCustomPixelShader : public FGlobalShader
 {
-public:
     DECLARE_GLOBAL_SHADER(FMyCustomPixelShader);
     SHADER_USE_PARAMETER_STRUCT(FMyCustomPixelShader, FGlobalShader);
 
@@ -18,6 +17,7 @@ public:
         SHADER_PARAMETER(FLinearColor, MyColor)
         SHADER_PARAMETER(FVector3f, LightDirection)
         SHADER_PARAMETER(FLinearColor, LightColor)
+        SHADER_PARAMETER(int32, DebugMode)
         RENDER_TARGET_BINDING_SLOTS()
     END_SHADER_PARAMETER_STRUCT()
 

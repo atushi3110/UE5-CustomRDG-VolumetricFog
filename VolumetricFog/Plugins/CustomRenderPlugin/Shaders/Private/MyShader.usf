@@ -1,18 +1,17 @@
-#include "/Engine/Public/Platform.ush"
+ï»¿#include "/Engine/Public/Platform.ush"
 
-// C++iPassParametersj‚©‚ç“n‚³‚ê‚éƒOƒ[ƒoƒ‹•Ï”
 float3 CameraPosition;
 float4x4 InvViewProjectionMatrix;
 float2 ScreenSize;
 float Time;
-float4 MyColor; // ‰_‚Ìƒx[ƒXFi—á: ”’j
+float4 MyColor;
 
-// š ƒ‰ƒCƒeƒBƒ“ƒOEF•t‚¯—pƒpƒ‰ƒ[ƒ^
-float3 LightDirection; // ‘¾—zŒõ‚Ì•ûŒü
-float4 LightColor; // ‘¾—zŒõ‚ÌF‚Æ‹­“xi—á: ‹àFE–¾‚é‚¢òFj
+float3 LightDirection;
+float4 LightColor;
+int DebugMode;
 
 // -----------------------------------------------------------------------------
-// ŠÈˆÕ 3D ƒnƒbƒVƒ… / ƒmƒCƒYŠÖ”
+// ãƒã‚¤ã‚ºé–¢æ•°
 // -----------------------------------------------------------------------------
 float hash(float3 p)
 {
@@ -50,28 +49,29 @@ float fbm(float3 p)
 }
 
 // -----------------------------------------------------------------------------
-// ƒwƒ‹ƒp[ŠÖ”: w’èÀ•W‚Ì–§“x‚ğŒvZ
+// é«˜åº¦å¸¯ãƒ¢ãƒ‡ãƒ«ã«ã‚ˆã‚‹é›²ã®å¯†åº¦è¨ˆç®—
 // -----------------------------------------------------------------------------
-float GetCloudDensity(float3 Pos, float TimeVal)
+float GetCloudDensityHighSensitivity(float3 Pos, float TimeVal)
 {
-    float DistanceFromCenter = length(Pos);
-    if (DistanceFromCenter >= 2000.0)
+    // åœ°è¡¨ã‹ã‚‰ 500m (50,000cm) ã€œ 2,500m (250,000cm) ã®ä½ç½®ã«è¨­å®š
+    float MinCloudHeight = 50000.0f;
+    float MaxCloudHeight = 250000.0f;
+
+    if (Pos.z < MinCloudHeight || Pos.z > MaxCloudHeight)
     {
-        return 0.0;
+        return 0.0f;
     }
 
-    float3 NoisePos = Pos * 0.001 + float3(TimeVal * 2.0, TimeVal * 1.0, TimeVal * 0.5);
-    float NoiseValue = fbm(NoisePos);
-    
-    float CloudDensity = saturate((NoiseValue - 0.3) * 3.0);
-    float SphereMask = pow(saturate(1.0 - (DistanceFromCenter / 2000.0)), 2.0);
+    float HeightNormalized = (Pos.z - MinCloudHeight) / (MaxCloudHeight - MinCloudHeight);
+    float HeightMask = sin(HeightNormalized * 3.14159265f);
 
-    return SphereMask * CloudDensity * 0.15;
+    float3 NoisePos = Pos * 0.00003f + float3(TimeVal * 0.05f, TimeVal * 0.02f, 0.0f);
+    float NoiseValue = fbm(NoisePos);
+
+    float CloudDensity = saturate((NoiseValue - 0.35f) * 3.0f);
+    return CloudDensity * HeightMask * 0.2f;
 }
 
-// -----------------------------------------------------------------------------
-// Henyey-Greenstein ˆÊ‘ŠŠÖ”i‘O•ûU—j
-// -----------------------------------------------------------------------------
 float HenyeyGreenstein(float CosTheta, float g)
 {
     float g2 = g * g;
@@ -79,92 +79,88 @@ float HenyeyGreenstein(float CosTheta, float g)
 }
 
 // =============================================================================
-// ƒƒCƒ“ƒsƒNƒZƒ‹ƒVƒF[ƒ_[
+// ãƒ¡ã‚¤ãƒ³ãƒ”ã‚¯ã‚»ãƒ«ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼
 // =============================================================================
 void MainPS(
     in float4 InPosition : SV_POSITION,
     out float4 OutColor : SV_Target0)
 {
-    // 1. ƒŒƒC‚ÌÄ\’z
+    // 1. ã‚¹ã‚¯ãƒªãƒ¼ãƒ³ UV (0 ~ 1)
     float2 UV = InPosition.xy / ScreenSize;
-    float4 ClipPos = float4(UV.x * 2.0 - 1.0, (1.0 - UV.y) * 2.0 - 1.0, 1.0, 1.0);
-    
-    float4 WorldPosTarget = mul(ClipPos, InvViewProjectionMatrix);
-    WorldPosTarget.xyz /= WorldPosTarget.w;
 
+    // 2. NDC åº§æ¨™ (-1 ~ 1)
+    // â˜… Reversed-Z ã§ã¯ Z=1.0 ãŒ Near Planeï¼ˆè¿‘å¹³é¢ï¼‰ã¨ãªã‚Šã¾ã™
+    float4 NdcPos = float4(UV.x * 2.0f - 1.0f, (1.0f - UV.y) * 2.0f - 1.0f, 1.0f, 1.0f);
+
+    // 3. ãƒ¯ãƒ¼ãƒ«ãƒ‰åº§æ¨™ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã®å¾©å…ƒ
+    float4 WorldTarget = mul(NdcPos, InvViewProjectionMatrix);
+    float3 WorldPos = WorldTarget.xyz / WorldTarget.w;
+
+    // 4. ãƒ¬ã‚¤ã®åŸç‚¹ã¨æ–¹å‘
     float3 RayOrigin = CameraPosition;
-    float3 RayDir = normalize(WorldPosTarget.xyz - RayOrigin);
+    float3 RayDir = normalize(WorldPos - RayOrigin);
 
-    // 2. ƒ‰ƒCƒeƒBƒ“ƒO‚Ì–‘OŒvZ
+    // â˜… å®‰å…¨å¯¾ç­–ï¼šä¸‡ãŒä¸€ RayDir ã« NaN ã‚„ Inf ãŒæ··ã–ã£ãŸå ´åˆã«é»’ç”»é¢åŒ–ã‚’é˜²æ­¢
+    if (any(isnan(RayDir)) || any(isinf(RayDir)))
+    {
+        OutColor = float4(0, 0, 0, 0);
+        return;
+    }
+
+    // 5. ãƒ©ã‚¤ãƒ†ã‚£ãƒ³ã‚°è¨­å®š
     float3 LightDirNorm = normalize(-LightDirection);
     float CosTheta = dot(RayDir, LightDirNorm);
-    
-    // ƒŠƒ€ƒ‰ƒCƒgi‘¾—z•ûŒü‚ğŒü‚¢‚½‚Æ‚«‚Ì‹P‚«j
     float PhaseFunction = HenyeyGreenstein(CosTheta, 0.6);
 
-    // š F•t‚¯—p‚Ì’è”İ’èiŒ©‚½–Ú‚ğ•ª‚©‚è‚â‚·‚­’²®j
-    float3 ShadowColor = float3(0.15, 0.2, 0.35); // ‰e‚ÌFiÂ‚İ‚ª‚©‚Á‚½ƒ_[ƒNƒuƒ‹[j
-    float3 AmbientLight = float3(0.3, 0.4, 0.5) * 0.8; // ŠÂ‹«Œõi‹ó‚©‚ç‚ÌÆ‚è•Ô‚µj
+    float3 ShadowColor = float3(0.15, 0.2, 0.35);
+    float3 AmbientLight = float3(0.3, 0.4, 0.5) * 0.8;
 
-    // 3. ƒŒƒCƒ}[ƒ`ƒ“ƒOˆ—
-    float StepSize = 80.0;
-    int MaxSteps = 32;
+    // 6. ãƒ¬ã‚¤ãƒãƒ¼ãƒãƒ³ã‚°
+    float StepSize = 4000.0; // 1ã‚¹ãƒ†ãƒƒãƒ— 40m
+    int MaxSteps = 64; // ç´„ 2.5km å…ˆã¾ã§æ¤œç´¢
 
     float3 FinalColor = float3(0.0, 0.0, 0.0);
     float Transmittance = 1.0;
-
     float3 CurrentPos = RayOrigin;
 
     for (int i = 0; i < MaxSteps; i++)
     {
         CurrentPos += RayDir * StepSize;
 
-        // š ’Ç‰Á: ’n–Ê‚æ‚è‰ºiZ < 0 ‚È‚Ç‚Ì—Ìˆæj‚âA‚ ‚Ü‚è‚É‚‚·‚¬‚éˆÊ’u‚ÍŒvZ‚ğƒXƒLƒbƒv‚µ‚ÄƒmƒCƒY‚ğ–h‚®
-        // (¦‰_‚Ì”z’u‚“x‚É‡‚í‚¹‚Ä Z ‚Ì”ÍˆÍ‚Í’²®‚µ‚Ä‚­‚¾‚³‚¢)
-        if (CurrentPos.z < -100.0f)
-        {
+        if (CurrentPos.z < -10000.0f)
             continue;
-        }
 
-        float Density = GetCloudDensity(CurrentPos, Time);
+        float Density = GetCloudDensityHighSensitivity(CurrentPos, Time);
 
-        if (Density > 0.001)
+        if (Density > 0.001f)
         {
-            // ƒZƒ‹ƒtƒVƒƒƒhƒEŒvZ
-            float LightStepSize = 100.0;
-            int LightMaxSteps = 6;
-            float LightDensityAccum = 0.0;
+            float LightStepSize = 3000.0f;
+            int LightMaxSteps = 3;
+            float LightDensityAccum = 0.0f;
 
             for (int j = 1; j <= LightMaxSteps; j++)
             {
                 float3 LightSamplePos = CurrentPos + LightDirNorm * (j * LightStepSize);
-                LightDensityAccum += GetCloudDensity(LightSamplePos, Time);
+                LightDensityAccum += GetCloudDensityHighSensitivity(LightSamplePos, Time);
             }
 
-            float LightTransmittance = exp(-LightDensityAccum * 1.5);
-
-            // ƒ‰ƒCƒeƒBƒ“ƒOŒvZ
+            float LightTransmittance = exp(-LightDensityAccum * 2.0f);
             float3 DirectLight = LightColor.rgb * LightTransmittance * PhaseFunction;
             float3 IndirectLight = lerp(ShadowColor, AmbientLight, LightTransmittance);
             float3 StepColor = (DirectLight + IndirectLight) * MyColor.rgb;
 
-            float StepTransmittance = exp(-Density * StepSize * 0.01);
-            
-            // š ’Ç‰Á: ’l‚ª”š”­iNAN/INFj‚µ‚È‚¢‚æ‚¤ saturate ‚â clamp ‚Å•ÛŒì
-            FinalColor += saturate(StepColor) * Density * Transmittance * StepSize * 0.01;
-
+            float StepTransmittance = exp(-Density * StepSize * 0.0001f);
+            FinalColor += saturate(StepColor) * Density * Transmittance * StepSize * 0.0001f;
             Transmittance *= StepTransmittance;
 
-            if (Transmittance < 0.01)
-            {
+            if (Transmittance < 0.01f)
                 break;
-            }
         }
     }
 
-    // š ’Ç‰Á: ƒAƒ‹ƒtƒ@’l‚ÆƒJƒ‰[‚ÌŠm’èisaturate‚Å 0.0`1.0 ‚ÉˆÀ‘S‚Éû‚ß‚éj
-    float CloudAlpha = saturate(1.0 - Transmittance);
+    float CloudAlpha = saturate(1.0f - Transmittance);
     FinalColor = saturate(FinalColor);
 
-    OutColor = float4(FinalColor, CloudAlpha);
+    // ã‚«ãƒ©ãƒ¼ã¨ã‚¢ãƒ«ãƒ•ã‚¡ã‚’æ­£ã—ãå‡ºåŠ›
+    OutColor = float4(FinalColor * CloudAlpha, CloudAlpha);
 }
