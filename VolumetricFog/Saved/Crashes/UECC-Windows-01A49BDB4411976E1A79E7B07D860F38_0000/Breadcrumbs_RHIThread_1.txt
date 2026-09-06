@@ -1,4 +1,0 @@
-Breadcrumbs 'RHIThread'
- - RenderGraphExecute - 
- - WorldTick
- - Frame 36750
