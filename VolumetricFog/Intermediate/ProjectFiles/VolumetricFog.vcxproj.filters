@@ -71,6 +71,9 @@
     <ClInclude Include="..\..\Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Private\MyRenderTestLibrary.h">
       <Filter>Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Private</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Private\VolumetricCloudManager.cpp">
+      <Filter>Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Private</Filter>
+    </ClCompile>
     <Filter Include="Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Public">
       <UniqueIdentifier>{91AFCC18-7431-3657-ADFC-B7982A073D61}</UniqueIdentifier>
     </Filter>
@@ -78,6 +81,9 @@
       <Filter>Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Public</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Public\CustomRenderPlugin.h">
+      <Filter>Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Public\VolumetricCloudManager.h">
       <Filter>Plugins\CustomRenderPlugin\Source\CustomRenderPlugin\Public</Filter>
     </ClInclude>
     <Filter Include="Source">

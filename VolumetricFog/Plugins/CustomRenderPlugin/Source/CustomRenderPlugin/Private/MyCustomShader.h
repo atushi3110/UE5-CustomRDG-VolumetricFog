@@ -18,8 +18,11 @@ class FMyCustomPixelShader : public FGlobalShader
         SHADER_PARAMETER(FVector3f, LightDirection)
         SHADER_PARAMETER(FLinearColor, LightColor)
         SHADER_PARAMETER(int32, DebugMode)
+        SHADER_PARAMETER_RDG_TEXTURE(Texture2D, SceneDepthTexture)
+        SHADER_PARAMETER_SAMPLER(SamplerState, SceneDepthTextureSampler)
         RENDER_TARGET_BINDING_SLOTS()
     END_SHADER_PARAMETER_STRUCT()
+
 
     static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
     {

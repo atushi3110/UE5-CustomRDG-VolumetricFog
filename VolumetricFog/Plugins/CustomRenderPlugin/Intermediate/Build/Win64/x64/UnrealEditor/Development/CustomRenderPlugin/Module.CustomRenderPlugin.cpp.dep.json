@@ -17,6 +17,9 @@
             "c:\\ue5\\portfolio\\ue5-customrdg-volumetricfog\\volumetricfog\\plugins\\customrenderplugin\\intermediate\\build\\win64\\unrealeditor\\inc\\customrenderplugin\\uht\\myrendertestlibrary.gen.cpp",
             "c:\\ue5\\portfolio\\ue5-customrdg-volumetricfog\\volumetricfog\\plugins\\customrenderplugin\\source\\customrenderplugin\\private\\myrendertestlibrary.h",
             "c:\\ue5\\portfolio\\ue5-customrdg-volumetricfog\\volumetricfog\\plugins\\customrenderplugin\\intermediate\\build\\win64\\unrealeditor\\inc\\customrenderplugin\\uht\\myrendertestlibrary.generated.h",
+            "c:\\ue5\\portfolio\\ue5-customrdg-volumetricfog\\volumetricfog\\plugins\\customrenderplugin\\intermediate\\build\\win64\\unrealeditor\\inc\\customrenderplugin\\uht\\volumetriccloudmanager.gen.cpp",
+            "c:\\ue5\\portfolio\\ue5-customrdg-volumetricfog\\volumetricfog\\plugins\\customrenderplugin\\source\\customrenderplugin\\public\\volumetriccloudmanager.h",
+            "c:\\ue5\\portfolio\\ue5-customrdg-volumetricfog\\volumetricfog\\plugins\\customrenderplugin\\intermediate\\build\\win64\\unrealeditor\\inc\\customrenderplugin\\uht\\volumetriccloudmanager.generated.h",
             "c:\\ue5\\portfolio\\ue5-customrdg-volumetricfog\\volumetricfog\\plugins\\customrenderplugin\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\customrenderplugin\\permoduleinline.gen.cpp",
             "c:\\program files\\epic games\\ue_5.7\\engine\\source\\runtime\\core\\public\\hal\\permoduleinline.inl",
             "c:\\ue5\\portfolio\\ue5-customrdg-volumetricfog\\volumetricfog\\plugins\\customrenderplugin\\source\\customrenderplugin\\private\\customrenderplugin.cpp",
@@ -48,7 +51,8 @@
             "c:\\program files\\epic games\\ue_5.7\\engine\\source\\runtime\\core\\public\\experimental\\containers\\robinhoodhashtable.h",
             "c:\\program files\\epic games\\ue_5.7\\engine\\source\\runtime\\rendercore\\public\\rendergraphbuilder.inl",
             "c:\\program files\\epic games\\ue_5.7\\engine\\source\\runtime\\rendercore\\public\\rendergraphutils.h",
-            "c:\\program files\\epic games\\ue_5.7\\engine\\source\\runtime\\rendercore\\public\\shaderparameterstruct.h"
+            "c:\\program files\\epic games\\ue_5.7\\engine\\source\\runtime\\rendercore\\public\\shaderparameterstruct.h",
+            "c:\\ue5\\portfolio\\ue5-customrdg-volumetricfog\\volumetricfog\\plugins\\customrenderplugin\\source\\customrenderplugin\\private\\volumetriccloudmanager.cpp"
         ],
         "ImportedModules": [],
         "ImportedHeaderUnits": []

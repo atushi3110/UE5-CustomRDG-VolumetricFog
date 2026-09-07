@@ -1,4 +1,4 @@
-#include "CustomRenderLibrary.h"
+Ôªø#include "CustomRenderLibrary.h"
 #include "MyCustomShader.h"
 #include "RenderGraphBuilder.h"
 #include "RenderGraphUtils.h"
@@ -8,6 +8,13 @@
 #include "Engine/Engine.h"
 #include "VolumetricCloudManager.h"
 #include "EngineUtils.h"
+
+// =============================================================================
+// ‚òÖ 11Ë°åÁõÆ„Äú13Ë°åÁõÆËøΩÂä†: Èñ¢Êï∞„ÅÆÂ§ñÔºà„Ç∞„É≠„Éº„Éê„É´„Çπ„Ç≥„Éº„ÉóÔºâ„Åß„ÇØ„É™„Ç¢Áî®ÊßãÈÄ†‰Ωì„ÇíÂÆöÁæ©
+// =============================================================================
+BEGIN_SHADER_PARAMETER_STRUCT(FClearDepthParameters, )
+    RENDER_TARGET_BINDING_SLOTS()
+END_SHADER_PARAMETER_STRUCT()
 
 void UCustomRenderLibrary::DrawCustomShaderToRenderTarget(
     UObject* WorldContextObject,
@@ -20,7 +27,7 @@ void UCustomRenderLibrary::DrawCustomShaderToRenderTarget(
     UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull);
     if (!World) return;
 
-    // 1. ÉNÉâÉEÉhÉ}ÉlÅ[ÉWÉÉÅ[Ç©ÇÁÇÃÉpÉâÉÅÅ[É^éÊìæ
+    // 1. „ÇØ„É©„Ç¶„Éâ„Éû„Éç„Éº„Ç∏„É£„Éº„Åã„Çâ„ÅÆ„Éë„É©„É°„Éº„ÇøÂèñÂæó
     FLinearColor PassCloudColor = Color;
     int32 PassDebugMode = 0;
 
@@ -37,7 +44,7 @@ void UCustomRenderLibrary::DrawCustomShaderToRenderTarget(
     APlayerController* PC = UGameplayStatics::GetPlayerController(World, 0);
     if (!PC || !PC->PlayerCameraManager) return;
 
-    // --- ÉJÉÅÉâÅE ViewProjection çsóÒÇÃåvéZ ---
+    // --- „Ç´„É°„É©„Éª ViewProjection Ë°åÂàó„ÅÆË®àÁÆó ---
     FVector CameraPosition = FVector::ZeroVector;
     FRotator CameraRotation = FRotator::ZeroRotator;
     PC->GetPlayerViewPoint(CameraPosition, CameraRotation);
@@ -52,7 +59,7 @@ void UCustomRenderLibrary::DrawCustomShaderToRenderTarget(
     float FOVRad = FMath::DegreesToRadians(FOVDeg);
     float AspectRatio = (float)Size.X / (float)Size.Y;
 
-    // UEÇÃÉèÅ[ÉãÉhç¿ïWånÅiXëO, YâE, Zè„ÅjÇ©ÇÁÉrÉÖÅ[ç¿ïWånÅiXâE, Yè„, ZëOÅjÇ÷ÇÃïœä∑äÓíÍ
+    // UE„ÅÆ„ÉØ„Éº„É´„ÉâÂ∫ßÊ®ôÁ≥ªÔºàXÂâç, YÂè≥, Z‰∏äÔºâ„Åã„Çâ„Éì„É•„ÉºÂ∫ßÊ®ôÁ≥ªÔºàXÂè≥, Y‰∏ä, ZÂâçÔºâ„Å∏„ÅÆÂ§âÊèõÂü∫Â∫ï
     const FMatrix ViewRotationMatrix = FMatrix(
         FPlane(0, 0, 1, 0),
         FPlane(1, 0, 0, 0),
@@ -60,20 +67,20 @@ void UCustomRenderLibrary::DrawCustomShaderToRenderTarget(
         FPlane(0, 0, 0, 1)
     );
 
-    // ê≥ämÇ» View çsóÒÇÃçÏê¨
+    // Ê≠£Á¢∫„Å™ View Ë°åÂàó„ÅÆ‰ΩúÊàê
     FMatrix ViewMatrix = FTranslationMatrix(-CameraPosition) * FInverseRotationMatrix(CameraRotation) * ViewRotationMatrix;
 
-    // Reversed-Z Perspective çsóÒ
+    // Reversed-Z Perspective Ë°åÂàó
     FMatrix ProjMatrix = FReversedZPerspectiveMatrix(FOVRad * 0.5f, AspectRatio, 1.0f, GNearClippingPlane);
 
-    // ViewProjection ãtçsóÒÅiGetTransposed ÇÕïsóvÅj
+    // ViewProjection ÈÄÜË°åÂàóÔºàGetTransposed „ÅØ‰∏çË¶ÅÔºâ
     FMatrix InvViewProj = (ViewMatrix * ProjMatrix).Inverse();
     FMatrix44f PassInvViewProj = FMatrix44f(InvViewProj);
 
     FVector3f PassCameraPos = (FVector3f)CameraPosition;
     FVector2f PassScreenSize = FVector2f((float)Size.X, (float)Size.Y);
 
-    // 2. ï`âÊÉXÉåÉbÉhÇ÷ÇÃÉ^ÉXÉNî≠çs
+    // 2. ÊèèÁîª„Çπ„É¨„ÉÉ„Éâ„Å∏„ÅÆ„Çø„Çπ„ÇØÁô∫Ë°å
     ENQUEUE_RENDER_COMMAND(DrawCustomShaderCommand)(
         [RenderTargetResource, PassCameraPos, PassInvViewProj, PassScreenSize, Time, PassCloudColor, PassDebugMode](FRHICommandListImmediate& RHICmdList)
         {
@@ -86,6 +93,35 @@ void UCustomRenderLibrary::DrawCustomShaderToRenderTarget(
                 CreateRenderTarget(RHITexture, TEXT("CustomRenderOutput"))
             );
 
+            // 1. SceneDepth „ÉÜ„ÇØ„Çπ„ÉÅ„É£„ÅÆÂÆöÁæ©
+            FRDGTextureDesc DepthDesc = FRDGTextureDesc::Create2D(
+                RHITexture->GetDesc().Extent,
+                PF_DepthStencil,
+                FClearValueBinding::DepthOne,
+                TexCreate_DepthStencilTargetable | TexCreate_ShaderResource
+            );
+
+            FRDGTextureRef DepthRDGTexture = GraphBuilder.CreateTexture(DepthDesc, TEXT("FallbackSceneDepth"));
+
+            // =============================================================================
+            // ‚òÖ 105Ë°åÁõÆ„Äú107Ë°åÁõÆ‰øÆÊ≠£: „Ç∞„É≠„Éº„Éê„É´ÂÆöÁæ©„Åï„Çå„Åü FClearDepthParameters „ÇíÂâ≤„ÇäÂΩì„Å¶
+            // =============================================================================
+            auto* ClearParameters = GraphBuilder.AllocParameters<FClearDepthParameters>();
+            ClearParameters->RenderTargets.DepthStencil = FDepthStencilBinding(
+                DepthRDGTexture,
+                ERenderTargetLoadAction::EClear,
+                ERenderTargetLoadAction::ENoAction,
+                FExclusiveDepthStencil::DepthWrite_StencilNop
+            );
+
+            GraphBuilder.AddPass(
+                RDG_EVENT_NAME("ClearFallbackDepth"),
+                ClearParameters,
+                ERDGPassFlags::Raster,
+                [](FRHICommandList& RHICmdList) {}
+            );
+
+            // 2. „É°„Ç§„É≥„Ç∑„Çß„Éº„ÉÄ„Éº„Éë„Çπ„ÅÆ„Éë„É©„É°„Éº„ÇøÂâ≤„ÇäÂΩì„Å¶
             FMyCustomPixelShader::FParameters* PassParameters = GraphBuilder.AllocParameters<FMyCustomPixelShader::FParameters>();
             PassParameters->CameraPosition = PassCameraPos;
             PassParameters->InvViewProjectionMatrix = PassInvViewProj;
@@ -98,10 +134,13 @@ void UCustomRenderLibrary::DrawCustomShaderToRenderTarget(
             PassParameters->LightDirection = LightDir;
             PassParameters->LightColor = FLinearColor(1.0f, 0.95f, 0.8f, 3.0f);
 
-            FGlobalShaderMap* ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
-            TShaderMapRef<FMyCustomPixelShader> PixelShader(ShaderMap);
+            PassParameters->SceneDepthTexture = DepthRDGTexture;
+            PassParameters->SceneDepthTextureSampler = TStaticSamplerState<SF_Point, AM_Clamp, AM_Clamp>::GetRHI();
 
             PassParameters->RenderTargets[0] = FRenderTargetBinding(OutputTexture, ERenderTargetLoadAction::EClear);
+
+            FGlobalShaderMap* ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
+            TShaderMapRef<FMyCustomPixelShader> PixelShader(ShaderMap);
 
             FRHIBlendState* AlphaBlendState = TStaticBlendState<
                 CW_RGBA,

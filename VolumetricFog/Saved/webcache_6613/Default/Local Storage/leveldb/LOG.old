@@ -1,0 +1,13 @@
+2026/09/06-16:16:30.144 7fec Reusing MANIFEST C:\UE5\Portfolio\UE5-CustomRDG-VolumetricFog\VolumetricFog\Saved\webcache_6613\Default\Local Storage\leveldb/MANIFEST-000001
+2026/09/06-16:16:30.151 7fec Recovering log #10
+2026/09/06-16:16:30.151 7fec Level-0 table #12: started
+2026/09/06-16:16:30.159 7fec Level-0 table #12: 71904 bytes OK
+2026/09/06-16:16:30.166 7fec Delete type=0 #10
+2026/09/06-16:16:30.167 7378 Compacting 4@0 + 0@1 files
+2026/09/06-16:16:30.173 7378 Generated table #14@0: 7 keys, 10404 bytes
+2026/09/06-16:16:30.173 7378 Compacted 4@0 + 0@1 files => 10404 bytes
+2026/09/06-16:16:30.174 7378 compacted to: files[ 0 1 0 0 0 0 0 ]
+2026/09/06-16:16:30.175 7378 Delete type=2 #3
+2026/09/06-16:16:30.175 7378 Delete type=2 #6
+2026/09/06-16:16:30.175 7378 Delete type=2 #9
+2026/09/06-16:16:30.175 7378 Delete type=2 #12
