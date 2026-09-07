@@ -1,5 +1,7 @@
 ﻿#include "/Engine/Public/Platform.ush"
-
+// -----------------------------------------------------------------------------
+// シェーダーパラメータ定義
+// -----------------------------------------------------------------------------
 float3 CameraPosition;
 float4x4 InvViewProjectionMatrix;
 float2 ScreenSize;
@@ -9,6 +11,10 @@ float4 MyColor;
 float3 LightDirection;
 float4 LightColor;
 int DebugMode;
+
+// ★ SceneDepth 遮蔽処理用テクスチャとサンプラーの宣言
+Texture2D SceneDepthTexture;
+SamplerState SceneDepthTextureSampler;
 
 // -----------------------------------------------------------------------------
 // ノイズ関数
@@ -35,17 +41,59 @@ float noise3D(float3 p)
     );
 }
 
+
+// 3D 疑似ランダムハッシュ関数
+float3 hash33(float3 p)
+{
+    p = frac(p * float3(0.1031, 0.1030, 0.0973));
+    p += dot(p, p.yxz + 33.33);
+    return frac((p.xxy + p.yxx) * p.zyx);
+}
+
+// 3D 勾配ノイズ (Gradient Noise / Perlin Noise)
+float GradientNoise(float3 p)
+{
+    float3 i = floor(p);
+    float3 f = frac(p);
+
+    // 5次補正曲線 (Quintic Curve) でなめらかに補間
+    float3 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+
+    // 8つのグリッド頂点での勾配と距離ベクトルの内積を計算
+    float g000 = dot(hash33(i + float3(0, 0, 0)) * 2.0 - 1.0, f - float3(0, 0, 0));
+    float g100 = dot(hash33(i + float3(1, 0, 0)) * 2.0 - 1.0, f - float3(1, 0, 0));
+    float g010 = dot(hash33(i + float3(0, 1, 0)) * 2.0 - 1.0, f - float3(0, 1, 0));
+    float g110 = dot(hash33(i + float3(1, 1, 0)) * 2.0 - 1.0, f - float3(1, 1, 0));
+    float g001 = dot(hash33(i + float3(0, 0, 1)) * 2.0 - 1.0, f - float3(0, 0, 1));
+    float g101 = dot(hash33(i + float3(1, 0, 1)) * 2.0 - 1.0, f - float3(1, 0, 1));
+    float g011 = dot(hash33(i + float3(0, 1, 1)) * 2.0 - 1.0, f - float3(0, 1, 1));
+    float g111 = dot(hash33(i + float3(1, 1, 1)) * 2.0 - 1.0, f - float3(1, 1, 1));
+
+    // 3次元線形補間 (Trilinear Interpolation)
+    return lerp(
+        lerp(lerp(g000, g100, u.x), lerp(g010, g110, u.x), u.y),
+        lerp(lerp(g001, g101, u.x), lerp(g011, g111, u.x), u.y),
+        u.z
+    ) * 0.5 + 0.5; // 0.0 ~ 1.0 の範囲に正規化
+}
+
+// -----------------------------------------------------------------------------
+// fbm のオクターブ（ループ）数を 3 から 5 に増やし、細かい凹凸を加える
+// -----------------------------------------------------------------------------
 float fbm(float3 p)
 {
-    float value = 0.0;
-    float amplitude = 0.5;
-    for (int i = 0; i < 3; i++)
+    float Value = 0.0;
+    float Amplitude = 0.5;
+    float Frequency = 1.0;
+    
+    // ループ回数を 3 -> 5 に増やしてディテールを追加
+    for (int i = 0; i < 5; i++)
     {
-        value += amplitude * noise3D(p);
-        p *= 2.0;
-        amplitude *= 0.5;
+        Value += Amplitude * GradientNoise(p * Frequency);
+        Frequency *= 2.02; // 周波数を倍々にして細かくする
+        Amplitude *= 0.5; // 振幅は半減させていく
     }
-    return value;
+    return saturate(Value);
 }
 
 // -----------------------------------------------------------------------------
@@ -65,17 +113,25 @@ float GetCloudDensityHighSensitivity(float3 Pos, float TimeVal)
     float HeightNormalized = (Pos.z - MinCloudHeight) / (MaxCloudHeight - MinCloudHeight);
     float HeightMask = sin(HeightNormalized * 3.14159265f);
 
-    float3 NoisePos = Pos * 0.00003f + float3(TimeVal * 0.05f, TimeVal * 0.02f, 0.0f);
+    float3 NoisePos = Pos * 0.00003f + float3(Time * 0.01f, 0, 0); // 0.00001f -> 0.00003f
     float NoiseValue = fbm(NoisePos);
 
-    float CloudDensity = saturate((NoiseValue - 0.35f) * 3.0f);
-    return CloudDensity * HeightMask * 0.2f;
+    float CloudDensity = smoothstep(0.38f, 0.60f, NoiseValue);
+    return CloudDensity * HeightMask * 0.4f;
 }
 
 float HenyeyGreenstein(float CosTheta, float g)
 {
     float g2 = g * g;
     return (1.0 - g2) / (4.0 * 3.14159265 * pow(1.0 + g2 - 2.0 * g * CosTheta, 1.5));
+}
+
+
+float CustomConvertFromDeviceZ(float DeviceDepth)
+{
+    // Reversed-Z における 0.0f は無限遠、1.0f は Near Plane です
+    // 画面全体へのスケール変換 (簡易リニア深度)
+    return (1.0f - DeviceDepth) * 100000.0f;
 }
 
 // =============================================================================
@@ -88,6 +144,10 @@ void MainPS(
     // 1. スクリーン UV (0 ~ 1)
     float2 UV = InPosition.xy / ScreenSize;
 
+    // ★ SceneDepth のサンプリングと深度変換    
+    float DeviceDepth = SceneDepthTexture.SampleLevel(SceneDepthTextureSampler, UV, 0).r;
+    float SceneDepth = CustomConvertFromDeviceZ(DeviceDepth);
+    
     // 2. NDC 座標 (-1 ~ 1)
     // ★ Reversed-Z では Z=1.0 が Near Plane（近平面）となります
     float4 NdcPos = float4(UV.x * 2.0f - 1.0f, (1.0f - UV.y) * 2.0f - 1.0f, 1.0f, 1.0f);
@@ -99,6 +159,14 @@ void MainPS(
     // 4. レイの原点と方向
     float3 RayOrigin = CameraPosition;
     float3 RayDir = normalize(WorldPos - RayOrigin);
+    
+    float MaxRayDistance = 100000.0f; // 雲描画の限界距離 (例: 1km)
+    
+    // 地形（遮蔽物）がある場合は、その手前でレイをストップさせる
+    if (SceneDepth > 0.0f)
+    {
+        MaxRayDistance = min(MaxRayDistance, SceneDepth);
+    }
 
     // ★ 安全対策：万が一 RayDir に NaN や Inf が混ざった場合に黒画面化を防止
     if (any(isnan(RayDir)) || any(isinf(RayDir)))
@@ -110,22 +178,28 @@ void MainPS(
     // 5. ライティング設定
     float3 LightDirNorm = normalize(-LightDirection);
     float CosTheta = dot(RayDir, LightDirNorm);
-    float PhaseFunction = HenyeyGreenstein(CosTheta, 0.6);
+    float PhaseFunction = HenyeyGreenstein(CosTheta, 0.75); // 0.6 -> 0.75 (フチが光りやすくなる)
 
-    float3 ShadowColor = float3(0.15, 0.2, 0.35);
-    float3 AmbientLight = float3(0.3, 0.4, 0.5) * 0.8;
+    float3 ShadowColor = float3(0.6, 0.7, 0.8f);
+    float3 AmbientLight = float3(0.8, 0.85, 0.9); // 環境光を白近くに持ち上げる
 
     // 6. レイマーチング
-    float StepSize = 4000.0; // 1ステップ 40m
-    int MaxSteps = 64; // 約 2.5km 先まで検索
+    float StepSize = 1500.0; // 1ステップ 40m
+    int MaxSteps = 96; // 約 2.5km 先まで検索
 
     float3 FinalColor = float3(0.0, 0.0, 0.0);
-    float Transmittance = 1.0;
-    float3 CurrentPos = RayOrigin;
+    float Transmittance = 1.0;    
+    float Dither = hash(float3(InPosition.xy, Time));
+    float3 CurrentPos = RayOrigin + RayDir * (StepSize * Dither); // 開始位置をズラしてバンディング/帯状ノイズを解消
 
     for (int i = 0; i < MaxSteps; i++)
     {
         CurrentPos += RayDir * StepSize;
+
+        // ★ 最大距離（遮蔽物までの距離）を超えたらループを抜ける
+        float DistanceFromOrigin = length(CurrentPos - RayOrigin);
+        if (DistanceFromOrigin > MaxRayDistance)
+            break;
 
         if (CurrentPos.z < -10000.0f)
             continue;
@@ -144,13 +218,16 @@ void MainPS(
                 LightDensityAccum += GetCloudDensityHighSensitivity(LightSamplePos, Time);
             }
 
-            float LightTransmittance = exp(-LightDensityAccum * 2.0f);
-            float3 DirectLight = LightColor.rgb * LightTransmittance * PhaseFunction;
+            // 太陽光の減衰（LightTransmittance） 0 になりにくくする
+            float LightTransmittance = exp(-LightDensityAccum * 0.5f); // 2.0f -> 0.5f へ緩和
+            // 直射光と環境光のバランス
+            float3 DirectLight = LightColor.rgb * LightTransmittance * PhaseFunction * 1.5f;
             float3 IndirectLight = lerp(ShadowColor, AmbientLight, LightTransmittance);
             float3 StepColor = (DirectLight + IndirectLight) * MyColor.rgb;
 
+            // カラーの蓄積時に不透明度(Density)をしっかり乗せる
             float StepTransmittance = exp(-Density * StepSize * 0.0001f);
-            FinalColor += saturate(StepColor) * Density * Transmittance * StepSize * 0.0001f;
+            FinalColor += StepColor * Density * Transmittance * StepSize * 0.0001f;
             Transmittance *= StepTransmittance;
 
             if (Transmittance < 0.01f)
