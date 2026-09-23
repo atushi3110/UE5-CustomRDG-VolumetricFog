@@ -81,3 +81,10 @@ DerivedDataCache/*
 
 # Temporary Folders
 /enc_temp_folder/
+
+
+**/Saved/
+**/DerivedDataCache/
+**/Intermediate/
+**/Binaries/
+/enc_temp_folder/
