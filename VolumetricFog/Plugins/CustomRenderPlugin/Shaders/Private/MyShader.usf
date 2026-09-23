@@ -1,7 +1,19 @@
 ﻿#include "/Engine/Public/Platform.ush"
 
+// =============================================================================
+// マクロ・定数定義 (#define)
+// =============================================================================
+#define CLOUD_MIN_HEIGHT        150000.0f  // 1,500m
+#define CLOUD_MAX_HEIGHT        1200000.0f // 12,000m
+#define MAX_RAY_WORLD_DIST      3000000.0f // 30km
+#define MAX_RAYMARCH_STEPS      96
+#define LIGHT_MARCH_STEPS       4
+#define LIGHT_STEP_SIZE         3000.0f
+#define DENSITY_EXTINCTION_COEFF 0.00008f
+#define PI                      3.14159265f
+
 // -----------------------------------------------------------------------------
-// シェーダーパラメータ定義
+// シェーダー外部パラメータ
 // -----------------------------------------------------------------------------
 float3 CameraPosition;
 float4x4 InvViewProjectionMatrix;
@@ -16,179 +28,386 @@ int DebugMode;
 Texture2D SceneDepthTexture;
 SamplerState SceneDepthTextureSampler;
 
-// -----------------------------------------------------------------------------
-// 1. ノイズ＆数学関数群
-// -----------------------------------------------------------------------------
-float hash(float3 p)
+float3 WindDirection;
+float WindSpeed;
+
+float CloudCoverage;
+float CloudDensity;
+
+// =============================================================================
+// 1. ノイズ & 数学ユーティリティクラス
+// =============================================================================
+struct FMathUtils
 {
-    p = frac(p * float3(0.1031, 0.1030, 0.0973));
-    p += dot(p, p.yzx + 33.33);
-    return frac((p.x + p.y) * p.z);
-}
-
-float3 hash33(float3 p)
-{
-    p = frac(p * float3(0.1031, 0.1030, 0.0973));
-    p += dot(p, p.yxz + 33.33);
-    return frac((p.xxy + p.yxx) * p.zyx);
-}
-
-float GradientNoise(float3 p)
-{
-    float3 i = floor(p);
-    float3 f = frac(p);
-    float3 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
-
-    float g000 = dot(hash33(i + float3(0, 0, 0)) * 2.0 - 1.0, f - float3(0, 0, 0));
-    float g100 = dot(hash33(i + float3(1, 0, 0)) * 2.0 - 1.0, f - float3(1, 0, 0));
-    float g010 = dot(hash33(i + float3(0, 1, 0)) * 2.0 - 1.0, f - float3(0, 1, 0));
-    float g110 = dot(hash33(i + float3(1, 1, 0)) * 2.0 - 1.0, f - float3(1, 1, 0));
-    float g001 = dot(hash33(i + float3(0, 0, 1)) * 2.0 - 1.0, f - float3(0, 0, 1));
-    float g101 = dot(hash33(i + float3(1, 0, 1)) * 2.0 - 1.0, f - float3(1, 0, 1));
-    float g011 = dot(hash33(i + float3(0, 1, 1)) * 2.0 - 1.0, f - float3(0, 1, 1));
-    float g111 = dot(hash33(i + float3(1, 1, 1)) * 2.0 - 1.0, f - float3(1, 1, 1));
-
-    return lerp(
-        lerp(lerp(g000, g100, u.x), lerp(g010, g110, u.x), u.y),
-        lerp(lerp(g001, g101, u.x), lerp(g011, g111, u.x), u.y),
-        u.z
-    ) * 0.5 + 0.5;
-}
-
-float fbm(float3 p)
-{
-    float Value = 0.0;
-    float Amplitude = 0.5;
-    float Frequency = 1.0;
-    
-    for (int i = 0; i < 5; i++)
+    static float Hash(float3 p)
     {
-        Value += Amplitude * GradientNoise(p * Frequency);
-        Frequency *= 2.02;
-        Amplitude *= 0.5;
-    }
-    return saturate(Value);
-}
-
-// Phase 関数 (Henyey-Greenstein)
-float HenyeyGreenstein(float CosTheta, float g)
-{
-    float g2 = g * g;
-    return (1.0 - g2) / (4.0 * 3.14159265 * pow(1.0 + g2 - 2.0 * g * CosTheta, 1.5));
-}
-
-// 再マッピング用ヘルパー関数
-float remap(float value, float oldMin, float oldMax, float newMin, float newMax)
-{
-    return newMin + (saturate((value - oldMin) / (oldMax - oldMin))) * (newMax - newMin);
-}
-
-// -----------------------------------------------------------------------------
-// 2. 高度＆ノイズディテールによる雲密度計算
-// -----------------------------------------------------------------------------
-float GetCloudDensity(float3 Pos, float TimeVal)
-{
-    float MinCloudHeight = 20000.0f; // 200m
-    float MaxCloudHeight = 150000.0f; // 1,500m
-
-    if (Pos.z < MinCloudHeight || Pos.z > MaxCloudHeight)
-    {
-        return 0.0f;
+        p = frac(p * float3(0.1031, 0.1030, 0.0973));
+        p += dot(p, p.yzx + 33.33);
+        return frac((p.x + p.y) * p.z);
     }
 
-    // 高度マスク: 雲底は比較的シャープに切り揃え、上部は緩やかに消す
-    float HeightNormalized = (Pos.z - MinCloudHeight) / (MaxCloudHeight - MinCloudHeight);
-    float HeightMask = smoothstep(0.0f, 0.10f, HeightNormalized) * smoothstep(1.0f, 0.60f, HeightNormalized);
-
-    // ★ 1. ベース形状ノイズ（少しスケールを細かくして空全体に散らす）
-    float3 BaseNoisePos = Pos * 0.000008f + float3(TimeVal * 0.002f, TimeVal * 0.001f, 0);
-    float BaseNoise = fbm(BaseNoisePos);
-
-    // ★ 2. 閾値処理（Remapでメリハリをつける）
-    float CloudCoverage = 0.38f; // 散らばり具合（下げるほど空全体に雲が増える）
-    float BaseDensity = remap(BaseNoise, CloudCoverage, 1.0f, 0.0f, 1.0f);
-    BaseDensity = saturate(BaseDensity);
-
-    if (BaseDensity <= 0.0f)
+    static float3 Hash33(float3 p)
     {
-        return 0.0f;
+        p = frac(p * float3(0.1031, 0.1030, 0.0973));
+        p += dot(p, p.yxz + 33.33);
+        return frac((p.xxy + p.yxx) * p.zyx);
     }
 
-    // ★ 3. 高周波ディテールノイズによる輪郭の削り取り (Erosion)
-    // ノイズスケールを細かく（0.00005f）して雲のフチをもこもこ・シャープにする
-    float3 DetailNoisePos = Pos * 0.00005f + float3(TimeVal * 0.008f, 0, 0);
-    float DetailNoise = fbm(DetailNoisePos);
-
-    // 密度が低い部分（フチ）ほど強力に削る
-    float HighFreqErosion = (1.0f - DetailNoise) * 0.55f;
-    float FinalDensity = saturate(BaseDensity - HighFreqErosion);
-
-    return FinalDensity * HeightMask * 4.0f; // 密度倍率を上げて内部を不透明にする
-}
-
-
-// -----------------------------------------------------------------------------
-// 3. レイ＆深度ヘルパー関数
-// -----------------------------------------------------------------------------
-void GenerateRay(float2 InScreenPos, out float3 OutRayOrigin, out float3 OutRayDir)
-{
-    float2 UV = InScreenPos / ScreenSize;
-    float4 NdcPos = float4(UV.x * 2.0f - 1.0f, (1.0f - UV.y) * 2.0f - 1.0f, 1.0f, 1.0f);
-
-    float4 WorldTarget = mul(NdcPos, InvViewProjectionMatrix);
-    float3 WorldPos = WorldTarget.xyz / WorldTarget.w;
-
-    OutRayOrigin = CameraPosition;
-    OutRayDir = normalize(WorldPos - OutRayOrigin);
-}
-
-float GetMaxRayDistance(float2 InScreenPos)
-{
-    float2 UV = InScreenPos / ScreenSize;
-    float DeviceDepth = SceneDepthTexture.SampleLevel(SceneDepthTextureSampler, UV, 0).r;
-    float CustomSceneDepth = (1.0f - DeviceDepth) * 100000.0f;
-
-    float MaxDistance = 600000.0f; // 6km
-    if (CustomSceneDepth > 0.0f)
+    static float GradientNoise(float3 p)
     {
-        MaxDistance = min(MaxDistance, CustomSceneDepth);
-    }
-    return MaxDistance;
-}
+        float3 i = floor(p);
+        float3 f = frac(p);
+        float3 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
 
-// -----------------------------------------------------------------------------
-// 4. ライティング計算（Beer-Lambert ＋ 散乱）
-// -----------------------------------------------------------------------------
-float3 CalculateLighting(float3 CurrentPos, float3 RayDir, float TimeVal)
-{
-    float3 LightDirNorm = normalize(-LightDirection);
-    float CosTheta = dot(RayDir, LightDirNorm);
-    
-    // 二重 Henyey-Greenstein（前方に強い光の輪、後方にうっすらとした反射）
-    float Phase = lerp(HenyeyGreenstein(CosTheta, 0.6f), HenyeyGreenstein(CosTheta, -0.2f), 0.3f);
+        float g000 = dot(Hash33(i + float3(0, 0, 0)) * 2.0 - 1.0, f - float3(0, 0, 0));
+        float g100 = dot(Hash33(i + float3(1, 0, 0)) * 2.0 - 1.0, f - float3(1, 0, 0));
+        float g010 = dot(Hash33(i + float3(0, 1, 0)) * 2.0 - 1.0, f - float3(0, 1, 0));
+        float g110 = dot(Hash33(i + float3(1, 1, 0)) * 2.0 - 1.0, f - float3(1, 1, 0));
+        float g001 = dot(Hash33(i + float3(0, 0, 1)) * 2.0 - 1.0, f - float3(0, 0, 1));
+        float g101 = dot(Hash33(i + float3(1, 0, 1)) * 2.0 - 1.0, f - float3(1, 0, 1));
+        float g011 = dot(Hash33(i + float3(0, 1, 1)) * 2.0 - 1.0, f - float3(0, 1, 1));
+        float g111 = dot(Hash33(i + float3(1, 1, 1)) * 2.0 - 1.0, f - float3(1, 1, 1));
 
-    // 太陽光方向へのセルフシャドウ（光の吸収距離のサンプリング）
-    float LightStepSize = 2500.0f;
-    int LightMaxSteps = 4;
-    float LightDensityAccum = 0.0f;
-
-    for (int j = 1; j <= LightMaxSteps; j++)
-    {
-        float3 LightSamplePos = CurrentPos + LightDirNorm * (j * LightStepSize);
-        LightDensityAccum += GetCloudDensity(LightSamplePos, TimeVal);
+        return lerp(
+            lerp(lerp(g000, g100, u.x), lerp(g010, g110, u.x), u.y),
+            lerp(lerp(g001, g101, u.x), lerp(g011, g111, u.x), u.y),
+            u.z
+        ) * 0.5 + 0.5;
     }
 
-    // Beer-Lambert の法則による光の減衰 (陰影のメリハリ)
-    float LightTransmittance = exp(-LightDensityAccum * 0.8f);
-    
-    float3 ShadowColor = float3(0.4, 0.45, 0.55); // 暗い下面の影色
-    float3 AmbientLight = float3(0.7, 0.8, 0.95); // 空からの環境光
+    static float Fbm(float3 p)
+    {
+        float Value = 0.0;
+        float Amplitude = 0.5;
+        float Frequency = 1.0;
+        
+        for (int i = 0; i < 5; i++)
+        {
+            Value += Amplitude * GradientNoise(p * Frequency);
+            Frequency *= 2.02;
+            Amplitude *= 0.5;
+        }
+        return saturate(Value);
+    }
 
-    float3 DirectLight = LightColor.rgb * LightTransmittance * Phase * 2.0f;
-    float3 IndirectLight = lerp(ShadowColor, AmbientLight, LightTransmittance);
+    static float HenyeyGreenstein(float CosTheta, float g)
+    {
+        float g2 = g * g;
+        return (1.0 - g2) / (4.0 * PI * pow(1.0 + g2 - 2.0 * g * CosTheta, 1.5));
+    }
 
-    return (DirectLight + IndirectLight) * MyColor.rgb;
-}
+    static float Remap(float value, float oldMin, float oldMax, float newMin, float newMax)
+    {
+        return newMin + (saturate((value - oldMin) / (oldMax - oldMin))) * (newMax - newMin);
+    }
+
+    static float InterleavedGradientNoise(float2 ScreenPos)
+    {
+        return frac(52.9829189f * frac(0.06711056f * ScreenPos.x + 0.00583715f * ScreenPos.y));
+    }
+};
+
+// =============================================================================
+// 2. レイ情報クラス
+// =============================================================================
+struct FCloudRay
+{
+    float3 Origin;
+    float3 Direction;
+
+    static FCloudRay Create(float2 ScreenPos)
+    {
+        FCloudRay Ray;
+        float2 UV = ScreenPos / ScreenSize;
+        float4 NdcPos = float4(UV.x * 2.0f - 1.0f, (1.0f - UV.y) * 2.0f - 1.0f, 1.0f, 1.0f);
+
+        float4 WorldTarget = mul(NdcPos, InvViewProjectionMatrix);
+        float3 WorldPos = WorldTarget.xyz / WorldTarget.w;
+
+        Ray.Origin = CameraPosition;
+        Ray.Direction = normalize(WorldPos - Ray.Origin);
+        return Ray;
+    }
+
+    float3 GetPoint(float Distance)
+    {
+        return Origin + Direction * Distance;
+    }
+
+    float GetMaxSceneDistance(float2 ScreenPos)
+    {
+        float2 UV = ScreenPos / ScreenSize;
+        float DeviceDepth = SceneDepthTexture.SampleLevel(SceneDepthTextureSampler, UV, 0).r;
+        
+        float MaxDistance = 600000.0f;
+
+        if (DeviceDepth > 0.00001f)
+        {
+            float LinearDepth = (1.0f / DeviceDepth) * 100.0f;
+            MaxDistance = min(MaxDistance, LinearDepth);
+        }
+
+        return MaxDistance;
+    }
+};
+
+// =============================================================================
+// 3. 雲ボリューム（密度＆ライティング）クラス
+// =============================================================================
+struct FCloudVolume
+{
+    float GetDensityFast(float3 Pos, float TimeVal)
+    {
+        if (Pos.z < CLOUD_MIN_HEIGHT || Pos.z > CLOUD_MAX_HEIGHT)
+        {
+            return 0.0f;
+        }
+
+        float HeightNormalized = (Pos.z - CLOUD_MIN_HEIGHT) / (CLOUD_MAX_HEIGHT - CLOUD_MIN_HEIGHT);
+        float HeightMask = smoothstep(0.0f, 0.2f, HeightNormalized) * smoothstep(1.0f, 0.7f, HeightNormalized);
+
+        float3 WindDirNorm = normalize(WindDirection);
+        float3 BaseWindOffset = WindDirNorm * (TimeVal * WindSpeed * 100.0f);
+
+        float3 BaseNoisePos = (Pos + BaseWindOffset) * 0.000008f;
+        float BaseNoise = FMathUtils::Fbm(BaseNoisePos);
+
+        float BaseDensity = FMathUtils::Remap(BaseNoise, CloudCoverage, 1.0f, 0.0f, 1.0f);
+        return saturate(BaseDensity) * HeightMask;
+    }
+
+    float GetDensity(float3 Pos, float TimeVal)
+    {
+        if (Pos.z < CLOUD_MIN_HEIGHT || Pos.z > CLOUD_MAX_HEIGHT)
+        {
+            return 0.0f;
+        }
+
+        float HeightNormalized = (Pos.z - CLOUD_MIN_HEIGHT) / (CLOUD_MAX_HEIGHT - CLOUD_MIN_HEIGHT);
+        float HeightMask = smoothstep(0.0f, 0.2f, HeightNormalized) * smoothstep(1.0f, 0.7f, HeightNormalized);
+        
+        float3 WindDirNorm = normalize(WindDirection);
+        float3 BaseWindOffset = WindDirNorm * (TimeVal * WindSpeed * 100.0f);
+        float3 DetailWindOffset = WindDirNorm * (TimeVal * WindSpeed * 250.0f) + float3(0, 0, TimeVal * 20.0f);
+
+        float3 BaseNoisePos = (Pos + BaseWindOffset) * 0.000008f;
+        float BaseNoise = FMathUtils::Fbm(BaseNoisePos);
+
+        float BaseDensity = saturate(FMathUtils::Remap(BaseNoise, CloudCoverage, 1.0f, 0.0f, 1.0f));
+
+        if (BaseDensity <= 0.0f)
+        {
+            return 0.0f;
+        }
+
+        float3 DetailNoisePos = (Pos + DetailWindOffset) * 0.00004f;
+        float DetailNoise = FMathUtils::Fbm(DetailNoisePos);
+
+        float HighFreqErosion = (1.0f - DetailNoise) * 0.45f;
+        float FinalDensity = saturate(BaseDensity - HighFreqErosion);
+
+        return FinalDensity * HeightMask * CloudDensity;
+    }
+
+    float3 CalculateLighting(float3 CurrentPos, float3 RayDir, float TimeVal)
+    {
+        float3 LightDirNorm = normalize(-LightDirection);
+        float CosTheta = dot(RayDir, LightDirNorm);
+
+        float ForwardPhase = FMathUtils::HenyeyGreenstein(CosTheta, 0.70f);
+        float BackPhase = FMathUtils::HenyeyGreenstein(CosTheta, -0.20f);
+        float BasePhase = lerp(ForwardPhase, BackPhase, 0.2f);
+
+        float LightDensityAccum = 0.0f;
+
+        for (int j = 1; j <= LIGHT_MARCH_STEPS; j++)
+        {
+            float3 LightSamplePos = CurrentPos + LightDirNorm * (j * LIGHT_STEP_SIZE);
+            LightDensityAccum += GetDensityFast(LightSamplePos, TimeVal);
+        }
+
+        float Transmittance = exp(-LightDensityAccum * 0.8f);
+        
+        float3 SunColor = LightColor.rgb * 1.8f + float3(0.1f, 0.1f, 0.1f);
+        float3 ShadowColor = float3(0.25f, 0.30f, 0.42f);
+        float3 SkyAmbient = float3(0.60f, 0.70f, 0.85f);
+
+        float3 DirectLight = SunColor * Transmittance * BasePhase * 2.0f;
+        float3 IndirectLight = lerp(ShadowColor, SkyAmbient, Transmittance);
+
+        return (DirectLight + IndirectLight);
+    }
+};
+
+// =============================================================================
+// 4. レイマーチング＆レンダラークラス
+// =============================================================================
+struct FCloudRaymarcher
+{
+    static float3 GetHeatmapColor(float NormalizedValue)
+    {
+        float v = saturate(NormalizedValue);
+        if (v <= 0.001f)
+            return float3(0.02f, 0.02f, 0.1f);
+
+        float3 col;
+        col.r = saturate(1.5f - abs(v * 4.0f - 3.0f));
+        col.g = saturate(1.5f - abs(v * 4.0f - 2.0f));
+        col.b = saturate(1.5f - abs(v * 4.0f - 1.0f));
+        return col;
+    }
+
+    static float4 RenderDebugView(int Mode, int StepsTaken, float AccDensity, float CloudAlpha, float2 ScreenPos)
+    {
+        if (Mode == 1)
+        {
+            return float4(GetHeatmapColor((float) StepsTaken / 40.0f), 1.0f);
+        }
+        if (Mode == 2)
+        {
+            float DensityVis = saturate(AccDensity);
+            float3 Low = float3(0.05f, 0.0f, 0.15f);
+            float3 Mid = float3(0.9f, 0.1f, 0.5f);
+            float3 High = float3(1.0f, 0.9f, 0.2f);
+            float3 DensityColor = lerp(Low, Mid, saturate(DensityVis * 2.0f));
+            DensityColor = lerp(DensityColor, High, saturate(DensityVis * 2.0f - 1.0f));
+            return float4(DensityColor, 1.0f);
+        }
+        if (Mode == 3)
+        {
+            float2 CheckPos = floor(ScreenPos / 16.0f);
+            float Checker = fmod(CheckPos.x + CheckPos.y, 2.0f);
+            float3 CheckerBg = lerp(float3(0.08f, 0.08f, 0.10f), float3(0.85f, 0.85f, 0.88f), Checker);
+            return float4(lerp(CheckerBg, float3(0.0f, 0.8f, 1.0f), CloudAlpha * 0.85f), 1.0f);
+        }
+        return float4(0, 0, 0, 0);
+    }
+
+    float4 Execute(float2 ScreenPos)
+    {
+        FCloudRay Ray = FCloudRay::Create(ScreenPos);
+
+        if (any(isnan(Ray.Direction)) || any(isinf(Ray.Direction)))
+        {
+            return float4(0, 0, 0, 0);
+        }
+
+        // ---------------------------------------------------------------------
+        // ★ 無限平面（Planar）による安全な交差判定
+        // ---------------------------------------------------------------------
+        float StartDist = 0.0f;
+        float EndDist = 0.0f;
+
+        // レイのZ軸成分（0に近い場合は水平に近い）
+        float DirZ = Ray.Direction.z;
+
+        // 1. 地上（雲層の下: Z < CLOUD_MIN_HEIGHT）から見上げている場合
+        if (Ray.Origin.z < CLOUD_MIN_HEIGHT)
+        {
+            // 下や水平（DirZ <= 0.0001）を向いている場合は雲に交差しないため即描画終了
+            if (DirZ <= 0.0001f)
+            {
+                return float4(0, 0, 0, 0);
+            }
+
+            // 平面との交差距離 t = (PlaneZ - RayOriginZ) / RayDirZ
+            StartDist = (CLOUD_MIN_HEIGHT - Ray.Origin.z) / DirZ;
+            EndDist = (CLOUD_MAX_HEIGHT - Ray.Origin.z) / DirZ;
+        }
+        // 2. 雲層の中にカメラがある場合
+        else if (Ray.Origin.z <= CLOUD_MAX_HEIGHT)
+        {
+            StartDist = 0.0f;
+            if (DirZ > 0.0001f)
+            {
+                EndDist = (CLOUD_MAX_HEIGHT - Ray.Origin.z) / DirZ;
+            }
+            else if (DirZ < -0.0001f)
+            {
+                EndDist = (CLOUD_MIN_HEIGHT - Ray.Origin.z) / DirZ;
+            }
+            else
+            {
+                EndDist = MAX_RAY_WORLD_DIST;
+            }
+        }
+        // 3. 雲層より上（宇宙側: Z > CLOUD_MAX_HEIGHT）から見下ろしている場合
+        else
+        {
+            // 上や水平（DirZ >= -0.0001）を向いている場合は雲に交差しない
+            if (DirZ >= -0.0001f)
+            {
+                return float4(0, 0, 0, 0);
+            }
+
+            StartDist = (CLOUD_MAX_HEIGHT - Ray.Origin.z) / DirZ;
+            EndDist = (CLOUD_MIN_HEIGHT - Ray.Origin.z) / DirZ;
+        }
+
+        // 距離のクリッピングと制限
+        StartDist = max(0.0f, StartDist);
+        EndDist = min(EndDist, StartDist + MAX_RAY_WORLD_DIST);
+        EndDist = min(EndDist, Ray.GetMaxSceneDistance(ScreenPos));
+
+        if (StartDist >= EndDist)
+        {
+            return float4(0, 0, 0, 0);
+        }
+
+        // ---------------------------------------------------------------------
+        // Raymarching Loop
+        // ---------------------------------------------------------------------
+        float TotalRayLength = EndDist - StartDist;
+        float BaseStepSize = TotalRayLength / (float) MAX_RAYMARCH_STEPS;
+
+        float3 DitherSeed = Ray.Direction * 1000.0f;
+        float Dither = FMathUtils::InterleavedGradientNoise(ScreenPos + DitherSeed.xy);
+        float CurrentRayDistance = StartDist + BaseStepSize * Dither;
+
+        FCloudVolume Volume;
+        float3 FinalColor = float3(0, 0, 0);
+        float Transmittance = 1.0f;
+        float AccumulatedDensity = 0.0f;
+        int ActualStepsTaken = 0;
+
+        for (int i = 0; i < MAX_RAYMARCH_STEPS; i++)
+        {
+            if (CurrentRayDistance >= EndDist)
+                break;
+
+            ActualStepsTaken++;
+            float3 CurrentPos = Ray.GetPoint(CurrentRayDistance);
+            float Density = Volume.GetDensity(CurrentPos, Time);
+
+            if (Density > 0.001f)
+            {
+                AccumulatedDensity += Density * 0.05f;
+
+                float3 StepColor = Volume.CalculateLighting(CurrentPos, Ray.Direction, Time);
+
+                float StepExtinction = Density * BaseStepSize * DENSITY_EXTINCTION_COEFF;
+                float StepTransmittance = exp(-StepExtinction);
+                
+                FinalColor += StepColor * Density * Transmittance * BaseStepSize * DENSITY_EXTINCTION_COEFF;
+                Transmittance *= StepTransmittance;
+
+                if (Transmittance < 0.01f)
+                    break;
+            }
+
+            CurrentRayDistance += BaseStepSize;
+        }
+
+        float CloudAlpha = saturate(1.0f - Transmittance);
+
+        if (DebugMode > 0)
+        {
+            return RenderDebugView(DebugMode, ActualStepsTaken, AccumulatedDensity, CloudAlpha, ScreenPos);
+        }
+
+        return float4(saturate(FinalColor), CloudAlpha);
+    }
+};
 
 // =============================================================================
 // メインピクセルシェーダー
@@ -197,62 +416,6 @@ void MainPS(
     in float4 InPosition : SV_POSITION,
     out float4 OutColor : SV_Target0)
 {
-    // 1. レイ生成
-    float3 RayOrigin, RayDir;
-    GenerateRay(InPosition.xy, RayOrigin, RayDir);
-
-    if (any(isnan(RayDir)) || any(isinf(RayDir)))
-    {
-        OutColor = float4(0, 0, 0, 0);
-        return;
-    }
-
-    // 2. 遮蔽距離取得
-    float MaxRayDistance = GetMaxRayDistance(InPosition.xy);
-
-    // 3. レイマーチング初期化
-    float StepSize = 2000.0f; // 1ステップ 20m
-    int MaxSteps = 96;
-
-    float3 FinalColor = float3(0.0, 0.0, 0.0);
-    float Transmittance = 1.0f;
-
-    float Dither = hash(float3(InPosition.xy, Time));
-    float3 CurrentPos = RayOrigin + RayDir * (StepSize * Dither);
-
-    // 4. レイマーチング・ループ
-    for (int i = 0; i < MaxSteps; i++)
-    {
-        CurrentPos += RayDir * StepSize;
-
-        float DistanceFromOrigin = length(CurrentPos - RayOrigin);
-        if (DistanceFromOrigin > MaxRayDistance)
-        {
-            break;
-        }
-
-        float Density = GetCloudDensity(CurrentPos, Time);
-
-        if (Density > 0.001f)
-        {
-            float3 StepColor = CalculateLighting(CurrentPos, RayDir, Time);
-
-            // 光の吸収と色積算 (Beer-Lambert attenuation)
-            float StepExtinction = Density * StepSize * 0.0003f;
-            float StepTransmittance = exp(-StepExtinction);
-            
-            FinalColor += StepColor * Density * Transmittance * StepSize * 0.0003f;
-            Transmittance *= StepTransmittance;
-
-            if (Transmittance < 0.01f)
-            {
-                break;
-            }
-        }
-    }
-
-    float CloudAlpha = saturate(1.0f - Transmittance);
-    FinalColor = saturate(FinalColor);
-
-    OutColor = float4(FinalColor, CloudAlpha);
+    FCloudRaymarcher Raymarcher;
+    OutColor = Raymarcher.Execute(InPosition.xy);
 }
