@@ -1,0 +1,91 @@
+#ifndef CLOUD_VOLUME_INCLUDED
+#define CLOUD_VOLUME_INCLUDED
+
+#include "../Common/CloudMath.ush"
+
+struct FCloudVolume
+{
+    float GetDensityFast(float3 Pos, float TimeVal)
+    {
+        if (Pos.z < CLOUD_MIN_HEIGHT || Pos.z > CLOUD_MAX_HEIGHT)
+        {
+            return 0.0f;
+        }
+
+        float HeightNormalized = (Pos.z - CLOUD_MIN_HEIGHT) / (CLOUD_MAX_HEIGHT - CLOUD_MIN_HEIGHT);
+        float HeightMask = smoothstep(0.0f, 0.2f, HeightNormalized) * smoothstep(1.0f, 0.7f, HeightNormalized);
+
+        float3 WindDirNorm = normalize(WindDirection);
+        float3 BaseWindOffset = WindDirNorm * (TimeVal * WindSpeed * 100.0f);
+
+        float3 BaseNoisePos = (Pos + BaseWindOffset) * 0.000008f;
+        float BaseNoise = FMathUtils::Fbm(BaseNoisePos);
+
+        float BaseDensity = FMathUtils::Remap(BaseNoise, CloudCoverage, 1.0f, 0.0f, 1.0f);
+        return saturate(BaseDensity) * HeightMask;
+    }
+
+    float GetDensity(float3 Pos, float TimeVal)
+    {
+        if (Pos.z < CLOUD_MIN_HEIGHT || Pos.z > CLOUD_MAX_HEIGHT)
+        {
+            return 0.0f;
+        }
+
+        float HeightNormalized = (Pos.z - CLOUD_MIN_HEIGHT) / (CLOUD_MAX_HEIGHT - CLOUD_MIN_HEIGHT);
+        float HeightMask = smoothstep(0.0f, 0.2f, HeightNormalized) * smoothstep(1.0f, 0.7f, HeightNormalized);
+        
+        float3 WindDirNorm = normalize(WindDirection);
+        float3 BaseWindOffset = WindDirNorm * (TimeVal * WindSpeed * 100.0f);
+        float3 DetailWindOffset = WindDirNorm * (TimeVal * WindSpeed * 250.0f) + float3(0, 0, TimeVal * 20.0f);
+
+        float3 BaseNoisePos = (Pos + BaseWindOffset) * 0.000008f;
+        float BaseNoise = FMathUtils::Fbm(BaseNoisePos);
+
+        float BaseDensity = saturate(FMathUtils::Remap(BaseNoise, CloudCoverage, 1.0f, 0.0f, 1.0f));
+
+        if (BaseDensity <= 0.0f)
+        {
+            return 0.0f;
+        }
+
+        float3 DetailNoisePos = (Pos + DetailWindOffset) * 0.00004f;
+        float DetailNoise = FMathUtils::Fbm(DetailNoisePos);
+
+        float HighFreqErosion = (1.0f - DetailNoise) * 0.45f;
+        float FinalDensity = saturate(BaseDensity - HighFreqErosion);
+
+        return FinalDensity * HeightMask * CloudDensity;
+    }
+
+    float3 CalculateLighting(float3 CurrentPos, float3 RayDir, float TimeVal)
+    {
+        float3 LightDirNorm = normalize(-LightDirection);
+        float CosTheta = dot(RayDir, LightDirNorm);
+
+        float ForwardPhase = FMathUtils::HenyeyGreenstein(CosTheta, 0.70f);
+        float BackPhase = FMathUtils::HenyeyGreenstein(CosTheta, -0.20f);
+        float BasePhase = lerp(ForwardPhase, BackPhase, 0.2f);
+
+        float LightDensityAccum = 0.0f;
+
+        for (int j = 1; j <= LIGHT_MARCH_STEPS; j++)
+        {
+            float3 LightSamplePos = CurrentPos + LightDirNorm * (j * LIGHT_STEP_SIZE);
+            LightDensityAccum += GetDensityFast(LightSamplePos, TimeVal);
+        }
+
+        float Transmittance = exp(-LightDensityAccum * 0.8f);
+        
+        float3 SunColor = LightColor.rgb * 1.8f + float3(0.1f, 0.1f, 0.1f);
+        float3 ShadowColor = float3(0.25f, 0.30f, 0.42f);
+        float3 SkyAmbient = float3(0.60f, 0.70f, 0.85f);
+
+        float3 DirectLight = SunColor * Transmittance * BasePhase * 2.0f;
+        float3 IndirectLight = lerp(ShadowColor, SkyAmbient, Transmittance);
+
+        return (DirectLight + IndirectLight);
+    }
+};
+
+#endif
