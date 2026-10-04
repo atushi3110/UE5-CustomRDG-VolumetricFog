@@ -88,3 +88,6 @@ DerivedDataCache/*
 **/Intermediate/
 **/Binaries/
 /enc_temp_folder/
+
+media/
+*.mp4

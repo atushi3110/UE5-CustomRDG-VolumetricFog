@@ -6,15 +6,46 @@ Unreal Engine 5のRDG（Render Dependency Graph）を用いたボリュメトリ
 
 ## 目次 (Table of Contents)
 
+- [動作デモ (Demo)](#-動作デモ-demo)
+- [プロジェクト開発目的](#プロジェクト開発目的)
 - [プロジェクト概要](#プロジェクト概要)
 - [主な機能 \& 技術的ハイライト](#主な機能--技術的ハイライト)
-- [システム構成・技術要素](#システム構成技術要素)
+- [システム構成・使用技術](#システム構成使用技術)
+- [レンダリングフロー・データパイプライン](#レンダリングフローデータパイプライン)
 - [使い方 (Usage)](#使い方-usage)
   - [動作環境](#動作環境)
   - [実行方法 (パッケージ版)](#実行方法-パッケージ版)
   - [エディタでの導入・ビルド手順](#エディタでの導入ビルド手順)
 - [ディレクトリ構成](#ディレクトリ構成)
 - [注意事項・ライセンス](#注意事項ライセンス)
+
+---
+
+## 📹 動作デモ (Demo)
+
+<video src="https://github.com/atushi3110/UE5-CustomRDG-VolumetricFog/releases/download/v1.0.0/VolumetricFogDemo.mp4" controls width="100%"></video>
+
+*※ UIスライダー操作によるリアルタイムな時刻変化、雲量・風速制御および動的ライティングの挙動*
+
+### 画面説明および操作内容
+画面下部の操作UI（UMG）により、リアルタイムでパラメータを変更・確認できます。
+
+* **Time of Day (時刻制御 / 00:00〜01:21)**:
+  * スライダー操作に応じて太陽の角度とライティングが変化します。夕方から夜間にかけての暗転や、早朝の朝焼け・ライティングの推移がスムーズに描画されます。
+* **Wind Speed (風速制御 / 00:30〜00:48)**:
+  * スライダー値を変更することで、3Dノイズのオフセット速度が変化し、雲の流れが加減速します。
+* **Cloud Coverage (雲量制御 / 00:50〜01:18)**:
+  * 密度閾値をリアルタイムに変更し、快晴に近い状態から厚い雲で覆われた状態まで動的にコントロールできます。
+
+---
+
+## プロジェクト開発目的
+
+本プロジェクトは、標準機能（Volumetric Cloudコンポーネント等）に頼らず、**「グラフィックスパイプラインの深い理解と自作シェーダーによる独自表現の実装」** を目標として開発しました。
+
+1. **カスタムパイプラインの理解**: Render Dependency Graph (RDG) を使用し、UE5のレンダーパイプラインに独自のカスタムHLSLシェーダーパスを安全かつ低負荷で統合する技術の検証。
+2. **物理ベースのボリューム描画自作**: レイマーチングアルゴリズム、3Dノイズ生成、およびBeer-Lambert則に基づく光散乱計算をゼロからHLSLで構築する表現力の追求。
+3. **低遅延なリアルタイム制御**: アプリケーション実行時に、UI（UMG）からの操作入力をC++およびMaterial Parameter Collection (MPC) を経由して描画パスへ即座に反映させる実践的なアーキテクチャ設計。
 
 ---
 
@@ -54,6 +85,48 @@ Unreal Engine 5のRDG（Render Dependency Graph）を用いたボリュメトリ
   - Material Parameter Collection (MPC)
   - UMG (Widget Blueprint / C++ Binding)
 
+---
+
+## レンダリングフロー・データパイプライン
+
+本システムにおけるユーザー入力から最終フレーム描画までの処理の流れです。
+
+```mermaid
+flowchart TD
+    subgraph UI ["1. User Interface (UMG)"]
+        A["UI Slider (Time / Wind / Density)"]
+    end
+
+    subgraph CXX ["2. C++ Manager Logic"]
+        B["AVolumetricCloudManager"]
+        C["Calculate Sun Vector & Irradiance Curve"]
+    end
+
+    subgraph Engine ["3. Parameter Synchronization"]
+        D["Material Parameter Collection (MPC)"]
+    end
+
+    subgraph Shader ["4. RDG / Custom HLSL Shader Pass"]
+        E["Ray Marching (Ray Casting)"]
+        F["3D Noise Density Sampling"]
+        G["Beer-Lambert Light Attenuation"]
+        H["Henyey-Greenstein Phase Scattering"]
+    end
+
+    subgraph Output ["5. Render Output"]
+        I["Composite to Scene Color Buffer"]
+    end
+
+    A -->|OnValueChanged Event| B
+    B --> C
+    C -->|SetScalarParameterValue / SetVectorParameterValue| D
+    D -->|Constant Buffer Auto Sync| E
+    E --> F
+    F --> G
+    G --> H
+    H --> I
+```
+    
 ---
 
 ## 使い方 (Usage)
